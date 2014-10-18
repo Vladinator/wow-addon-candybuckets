@@ -36,8 +36,6 @@ function addon:CheckCalendar()
 
 		if calendarType == "HOLIDAY" then
 			if ns:CanLoadEvent(texture) then
-				ns:CacheCompletedQuests()
-
 				ns:LoadEvent(texture)
 
 				numLoaded = numLoaded + 1
