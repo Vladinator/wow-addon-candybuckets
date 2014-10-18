@@ -6,4 +6,12 @@
 ## DefaultState: enabled
 ## SavedVariables: CandyBucketsDB
 
+libs\Astrolabe\Load.xml
+
+ns.lua
+
+db\hallow.lua
+db\lunar.lua
+db\midsummer.lua
+
 core.lua
