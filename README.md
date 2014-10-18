@@ -1,0 +1,2 @@
+wow-addon-candybuckets
+======================
