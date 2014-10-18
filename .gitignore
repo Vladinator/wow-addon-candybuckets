@@ -1,0 +1,32 @@
+# OSX
+._*
+.apdisk
+.AppleDB
+.AppleDesktop
+.AppleDouble
+.DS_Store
+.LSOverride
+.Spotlight-V100
+.Trashes
+Network Trash Folder
+Temporary Items
+Icon
+
+# Windows
+$RECYCLE.BIN/
+Desktop.ini
+ehthumbs.db
+Thumbs.db
+*.cab
+*.msi
+*.msm
+*.msp
+
+# Linux
+*~
+.directory
+
+# Notepad++
+nppBackup/
+*.bak
+*.out
