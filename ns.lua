@@ -6,6 +6,54 @@ ns.quests = nil
 local Astrolabe = DongleStub("Astrolabe-1.0")
 local worldMapFrame = WorldMapButton
 
+local IsAcceptedZone
+do
+	local empty = {}
+	local useEmpty = false
+
+	IsAcceptedZone = setmetatable({}, {
+		__index = function(self, i)
+			if useEmpty then
+				self[i] = empty
+				return empty
+			end
+			self[i] = {}
+			return self[i]
+		end
+	})
+
+	local continents = {GetMapContinents()}
+	local numContinents = #continents
+	local continent = 0
+	local zones
+	local numZones
+
+	for i = 1, numContinents, 2 do
+		continent = continent + 1
+		zones = {GetMapZones(continent)}
+		numZones = #zones
+
+		for j = 1, numZones, 2 do
+			IsAcceptedZone[continent][zones[j]] = false
+		end
+	end
+
+	IsAcceptedZone[1][13] = true -- Kalimdor
+	IsAcceptedZone[2][14] = true -- Eastern Kingdoms
+	IsAcceptedZone[3][466] = true -- Outland
+	IsAcceptedZone[4][485] = true -- Northrend
+	IsAcceptedZone[5][751] = true -- The Maelstrom
+	IsAcceptedZone[6][862] = true -- Pandaria
+	IsAcceptedZone[7][962] = true -- Draenor
+
+	-- Vashj'ir
+	for k, v in ipairs({610, 613, 614, 615}) do
+		IsAcceptedZone[2][v] = false
+	end
+
+	useEmpty = true
+end
+
 function ns:CanLoadEvent(texture)
 	return type(ns.modules[texture]) == "table" and not ns.modules[texture].loaded
 end
@@ -41,6 +89,8 @@ function ns:IsQuestCompleted(questID)
 end
 
 function ns:QuestCompleted(questID)
+	GetQuestsCompleted(ns.quests) -- TODO: obscolete or not?
+
 	for _, module in pairs(ns.modules) do
 		if module.loaded then
 			local node = module.nodes[questID]
@@ -55,13 +105,18 @@ function ns:QuestCompleted(questID)
 end
 
 function ns:UpdateNodes()
-	local areaID, isContinent = GetCurrentMapAreaID() -- Astrolabe:GetCurrentPlayerPosition()
+	if not worldMapFrame:IsShown() then
+		return
+	end
+
+	local continent = IsAcceptedZone[GetCurrentMapContinent()]
+	local zone = continent[GetCurrentMapAreaID()]
 
 	for _, module in pairs(ns.modules) do
 		if module.loaded then
 			for quest, data in pairs(module.nodes) do
 				if not ns:IsQuestCompleted(quest) then
-					if isContinent or data.area == areaID then
+					if zone == false or (zone == true and continent[data.area] == false) then
 						ns:CreateOrUpdateWidget(data, module)
 					else
 						ns:RemoveNode(data)
