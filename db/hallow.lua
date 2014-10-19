@@ -5,6 +5,12 @@ local iconTexture = "Interface\\Icons\\Achievement_Halloween_Candy_01"
 local nodes = {}
 
 local db = {
+	--["Phased - Dalaran"] = {
+	--	[13463] = {side = 3, area = 504, level = 1, x = 48.50, y = 40.60},
+	--	[13472] = {side = 3, area = 504, level = 2, x = 38.10, y = 60.50},
+	--	[13473] = {side = 1, area = 504, level = 1, x = 42.60, y = 63.40},
+	--	[13474] = {side = 2, area = 504, level = 0, x = 49.10, y = 39.70},
+	--},
 	["Phased"] = {
 		[12349] = {side = 1, area = 851, level = 0, x = 66.60, y = 45.30},
 		[12364] = {side = 2, area = 480, level = 0, x = 38.20, y = 84.40},
