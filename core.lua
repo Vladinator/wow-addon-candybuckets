@@ -1,3 +1,9 @@
+local _G = _G
+local CalendarGetDate = CalendarGetDate
+local CalendarGetDayEvent = CalendarGetDayEvent
+local CalendarGetNumDayEvents = CalendarGetNumDayEvents
+local CalendarSetAbsMonth = CalendarSetAbsMonth
+
 local addonName, ns = ...
 local addon = CreateFrame("Frame")
 addon:SetScript("OnEvent", function(self, event, ...) self[event](self, event, ...) end)
@@ -18,8 +24,10 @@ end
 
 function addon:QueryCalendar(check)
 	addon:RegisterEvent("CALENDAR_UPDATE_EVENT_LIST")
+
 	local _, month, day, year = CalendarGetDate()
 	CalendarSetAbsMonth(month, year)
+
 	if check then
 		addon:CheckCalendar()
 	end

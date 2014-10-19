@@ -12,7 +12,7 @@ local db = {
 		[12370] = {side = 2, area = 480, level = 0, x = 67.70, y = 73.50},
 		[12383] = {side = 2, area = 851, level = 0, x = 36.80, y = 32.50},
 		[12398] = {side = 3, area = 851, level = 0, x = 41.90, y = 74.10},
-		[12404] = {side = 3, area = 481, level = 0, x = 28.10, y = 49.00},
+		[12404] = {side = 3, area = 481, level = 0, x = 56.20, y = 81.80},
 		[12409] = {side = 3, area = 473, level = 0, x = 61.00, y = 28.20},
 		[13463] = {side = 3, area = 924, level = 1, x = 48.30, y = 40.80},
 		[13472] = {side = 3, area = 924, level = 2, x = 37.60, y = 59.80},
@@ -178,7 +178,7 @@ local db = {
 		[12394] = {side = 2, area = 475, level = 0, x = 76.20, y = 60.40},
 		[12395] = {side = 2, area = 473, level = 0, x = 30.30, y = 27.80},
 		[12403] = {side = 3, area = 467, level = 0, x = 78.50, y = 62.90},
-		[12404] = {side = 3, area = 481, level = 0, x = 31.10, y = 32.90},
+		[12404] = {side = 3, area = 481, level = 0, x = 28.10, y = 49.00},
 		[12406] = {side = 3, area = 475, level = 0, x = 62.90, y = 38.30},
 		[12407] = {side = 3, area = 479, level = 0, x = 32.10, y = 64.50},
 		[12408] = {side = 3, area = 479, level = 0, x = 43.40, y = 36.10},
@@ -268,12 +268,13 @@ ns.modules[texture] = {
 		for _, entries in pairs(db) do
 			for quest, data in pairs(entries) do
 				if (data.side == 3 or data.side == faction) and not ns:IsQuestCompleted(quest) then
-					nodes[quest] = {
+					table.insert(nodes, {
+						quest = quest,
 						area = data.area,
 						level = data.level,
 						x = data.x/100,
 						y = data.y/100,
-					}
+					})
 				end
 			end
 		end
@@ -281,5 +282,19 @@ ns.modules[texture] = {
 		table.wipe(db)
 		self.loaded = true
 		return true
+	end,
+
+	OnEnter = function(self)
+		WorldMapTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		WorldMapTooltip:SetText(string.format("Quest: %d", self.node.quest))
+		WorldMapTooltip:AddLine(string.format("%.1f, %.1f", self.node.x * 100, self.node.y * 100), 1, 1, 1, true)
+		if ns.WaypointAddons:GetAddon() then
+			WorldMapTooltip:AddLine("<Click for waypoint.>", .8, .8, .8, true)
+		end
+		WorldMapTooltip:Show()
+	end,
+
+	OnLeave = function(self)
+		WorldMapTooltip:Hide()
 	end,
 }

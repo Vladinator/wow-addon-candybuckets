@@ -231,13 +231,14 @@ ns.modules[texture] = {
 		for _, entries in pairs(db) do
 			for quest, data in pairs(entries) do
 				if (data.side == 3 or data.side == faction) and not ns:IsQuestCompleted(quest) then
-					nodes[quest] = {
-						honor = data.honor, -- TODO: NYI: use to indicate what is for extinguishing and what is for honoring
+					table.insert(nodes, {
+						quest = quest,
 						area = data.area,
 						level = data.level,
 						x = data.x/100,
 						y = data.y/100,
-					}
+						honor = data.honor,
+					})
 				end
 			end
 		end
@@ -245,5 +246,19 @@ ns.modules[texture] = {
 		table.wipe(db)
 		self.loaded = true
 		return true
+	end,
+
+	OnEnter = function(self)
+		WorldMapTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		WorldMapTooltip:SetText(string.format("Quest: %d", self.node.quest))
+		WorldMapTooltip:AddLine(string.format("%.1f, %.1f", self.node.x * 100, self.node.y * 100), 1, 1, 1, true)
+		if ns.WaypointAddons:GetAddon() then
+			WorldMapTooltip:AddLine("<Click for waypoint.>", .8, .8, .8, true)
+		end
+		WorldMapTooltip:Show()
+	end,
+
+	OnLeave = function(self)
+		WorldMapTooltip:Hide()
 	end,
 }
