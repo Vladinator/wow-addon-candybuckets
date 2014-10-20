@@ -276,6 +276,8 @@ function ns:CreateOrUpdateWidget(node, module)
 
 	if widget then
 		widget:Hide()
+
+		widget.node, widget.module = nil
 	end
 
 	widget = nil
@@ -294,8 +296,7 @@ function ns:CreateOrUpdateWidget(node, module)
 		table_insert(ns.widgets, widget)
 	end
 
-	widget.node = node
-	widget.module = module
+	widget.node, widget.module = node, module
 
 	if module then
 		widget.icon:SetTexture(module.texture)
@@ -311,6 +312,7 @@ function ns:CreateOrUpdateWidget(node, module)
 
 	Astrolabe:PlaceIconOnWorldMap(worldMapFrame, widget, node.area, node.level, node.x, node.y)
 	widget:SetParent(worldMapFrame)
+	widget:SetFrameStrata("HIGH")
 	widget:SetFrameLevel(255)
 
 	-- TODO: minimap icons
@@ -323,12 +325,12 @@ function ns:CreateWidget()
 	widget:SetSize(16, 16)
 	widget:RegisterForClicks("AnyUp")
 
-	widget.icon = widget:CreateTexture(nil, "ARTWORK", 9)
+	widget.icon = widget:CreateTexture(nil, "ARTWORK", 2)
 	widget.icon:SetAllPoints()
 	widget.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
 	widget.icon:SetTexCoord(.15, .85, .15, .85)
 
-	widget.border = widget:CreateTexture(nil, "ARTWORK", 3)
+	widget.border = widget:CreateTexture(nil, "ARTWORK", 1)
 	widget.border:SetPoint("TOPLEFT", -1, 1)
 	widget.border:SetPoint("BOTTOMRIGHT", 1, -1)
 	widget.border:SetTexture(0, 0, 0, 1)
