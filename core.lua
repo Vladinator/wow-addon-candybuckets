@@ -1,6 +1,8 @@
-local DEBUG = true
+local DEBUG = false
 
 local _G = _G
+local type = type
+local pairs = pairs
 local CalendarGetDate = CalendarGetDate
 local CalendarGetDayEvent = CalendarGetDayEvent
 local CalendarGetNumDayEvents = CalendarGetNumDayEvents

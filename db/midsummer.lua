@@ -8,6 +8,7 @@ local WorldMapTooltip = WorldMapTooltip
 local _, ns = ...
 
 local texture = "Calendar_Midsummer"
+local iconTitle = "Bonfire"
 local iconTexture = "Interface\\Icons\\Spell_Fire_MasterOfElements"
 local iconTextureHonor = "Interface\\Icons\\INV_SummerFest_FireSpirit"
 local nodes = {}
@@ -247,7 +248,6 @@ ns.modules[texture] = {
 						y = data.y/100,
 						title = data.title,
 						text = data.text,
-						nowrap = false,
 						honor = data.honor,
 					})
 				end
@@ -262,8 +262,6 @@ ns.modules[texture] = {
 	OnShow = function(self)
 		if self.node.honor then
 			self.icon:SetTexture(iconTextureHonor)
-		else
-			self.icon:SetTexture(iconTexture)
 		end
 	end,
 
@@ -272,20 +270,20 @@ ns.modules[texture] = {
 		if self.node.title then
 			WorldMapTooltip:SetText(self.node.title)
 		else
-			WorldMapTooltip:SetText(string_format("Quest: %d", self.node.quest))
+			WorldMapTooltip:SetText(iconTitle)
 		end
 		if self.node.honor then
-			WorldMapTooltip:AddLine("Honor the flame", 1, .8, 0, true)
+			WorldMapTooltip:AddLine("Honor the flame", 1, 1, 0, true)
 		else
-			WorldMapTooltip:AddLine("Desecrate the bonfire", 1, .8, 0, true)
+			WorldMapTooltip:AddLine("Desecrate the bonfire", 1, 1, 0, true)
 		end
 		if self.node.text then
-			WorldMapTooltip:AddLine(self.node.text, 1, 1, 1, not self.node.nowrap)
-		else
-			WorldMapTooltip:AddLine(string_format("%.1f, %.1f", self.node.x * 100, self.node.y * 100), 1, 1, 1, true)
+			WorldMapTooltip:AddLine(self.node.text, 1, 1, 1, true)
 		end
+		WorldMapTooltip:AddLine(string_format("%.1f, %.1f", self.node.x * 100, self.node.y * 100), 1, 1, 1, false)
+		WorldMapTooltip:AddLine(string_format("Quest %d", self.node.quest), .8, .8, .8, false)
 		if ns.WaypointAddons:GetAddon() then
-			WorldMapTooltip:AddLine("<Click for waypoint.>", .8, .8, .8, true)
+			WorldMapTooltip:AddLine("<Click for waypoint.>", .8, .8, .8, false)
 		end
 		WorldMapTooltip:Show()
 	end,

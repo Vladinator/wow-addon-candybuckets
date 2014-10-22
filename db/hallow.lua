@@ -8,19 +8,28 @@ local WorldMapTooltip = WorldMapTooltip
 local _, ns = ...
 
 local texture = "Calendar_HallowsEnd"
+local iconTitle = "Candy Bucket"
 local iconTexture = "Interface\\Icons\\Achievement_Halloween_Candy_01"
+local iconTexturePhase = "Interface\\Icons\\Spell_Shadow_Teleport"
 local nodes = {}
 
 local db = {
+	["Information"] = {
+		{quest = 12349, side = 1, area = 141, level = 0, x = 56.18, y = 50.02, phase = 1},
+		{quest = 12349, side = 1, area = 851, level = 0, x = 56.18, y = 50.02, phase = 1},
+		{quest = 28960, side = 1, area = 19, level = 0, x = 48.16, y = 7.28, phase = 1},
+		{quest = 28961, side = 1, area = 19, level = 0, x = 48.16, y = 7.28, phase = 1},
+	},
 	["Phased"] = {
-		[12349] = {side = 1, area = 851, level = 0, x = 66.60, y = 45.30},
+		[12340] = {side = 1, area = 39, level = 0, x = 56.70, y = 47.22, text = "Phased"},
+		[12349] = {side = 1, area = 851, level = 0, x = 66.60, y = 45.30, text = "Phased"},
 		[12364] = {side = 2, area = 480, level = 0, x = 38.20, y = 84.40},
 		[12369] = {side = 2, area = 480, level = 0, x = 79.60, y = 57.90},
 		[12370] = {side = 2, area = 480, level = 0, x = 67.70, y = 73.50},
 		[12383] = {side = 2, area = 851, level = 0, x = 36.80, y = 32.50},
 		[12398] = {side = 3, area = 851, level = 0, x = 41.90, y = 74.10},
-		[12404] = {side = 3, area = 481, level = 0, x = 56.20, y = 81.80},
-		[12409] = {side = 3, area = 473, level = 0, x = 61.00, y = 28.20},
+		[12404] = {side = 3, area = 481, level = 0, x = 56.20, y = 81.80, text = "The Scryers"},
+		[12409] = {side = 3, area = 473, level = 0, x = 61.00, y = 28.20, text = "The Aldor"},
 		[13463] = {side = 3, area = 924, level = 1, x = 48.30, y = 40.80},
 		[13472] = {side = 3, area = 924, level = 2, x = 37.60, y = 59.80},
 		[28973] = {side = 2, area = 770, level = 0, x = 53.50, y = 42.90},
@@ -53,7 +62,7 @@ local db = {
 		[12335] = {side = 1, area = 341, level = 0, x = 18.70, y = 51.50},
 		[12336] = {side = 1, area = 301, level = 0, x = 60.50, y = 75.20},
 		[12339] = {side = 1, area = 35, level = 0, x = 35.50, y = 48.50},
-		[12340] = {side = 1, area = 39, level = 0, x = 52.90, y = 53.60},
+		[12340] = {side = 1, area = 39, level = 0, x = 52.90, y = 53.60, text = "Phased"},
 		[12342] = {side = 1, area = 36, level = 0, x = 27.00, y = 45.00},
 		[12343] = {side = 1, area = 40, level = 0, x = 10.80, y = 60.90},
 		[12344] = {side = 1, area = 34, level = 0, x = 73.90, y = 44.30},
@@ -73,8 +82,8 @@ local db = {
 		[28956] = {side = 1, area = 17, level = 0, x = 21.00, y = 56.50},
 		[28957] = {side = 2, area = 17, level = 0, x = 18.50, y = 42.80},
 		[28959] = {side = 2, area = 19, level = 0, x = 40.50, y = 11.50},
-		[28960] = {side = 1, area = 19, level = 0, x = 60.70, y = 14.20},
-		[28961] = {side = 1, area = 19, level = 0, x = 44.50, y = 87.70},
+		[28960] = {side = 1, area = 19, level = 0, x = 60.70, y = 14.20, text = "Phased"},
+		[28961] = {side = 1, area = 19, level = 0, x = 44.50, y = 87.70, text = "Phased"},
 		[28962] = {side = 2, area = 24, level = 0, x = 60.30, y = 63.80},
 		[28963] = {side = 1, area = 35, level = 0, x = 83.10, y = 63.40},
 		[28964] = {side = 1, area = 37, level = 0, x = 53.10, y = 66.90},
@@ -111,7 +120,7 @@ local db = {
 		[12345] = {side = 1, area = 43, level = 0, x = 37.00, y = 49.30},
 		[12347] = {side = 1, area = 81, level = 0, x = 40.60, y = 17.70},
 		[12348] = {side = 1, area = 101, level = 0, x = 66.30, y = 6.70},
-		[12349] = {side = 1, area = 141, level = 0, x = 66.60, y = 45.30},
+		[12349] = {side = 1, area = 141, level = 0, x = 66.60, y = 45.30, text = "Phased"},
 		[12350] = {side = 1, area = 121, level = 0, x = 46.30, y = 45.20},
 		[12361] = {side = 2, area = 4, level = 0, x = 51.60, y = 41.70},
 		[12362] = {side = 2, area = 9, level = 0, x = 46.80, y = 60.50},
@@ -184,11 +193,11 @@ local db = {
 		[12394] = {side = 2, area = 475, level = 0, x = 76.20, y = 60.40},
 		[12395] = {side = 2, area = 473, level = 0, x = 30.30, y = 27.80},
 		[12403] = {side = 3, area = 467, level = 0, x = 78.50, y = 62.90},
-		[12404] = {side = 3, area = 481, level = 0, x = 28.10, y = 49.00},
+		[12404] = {side = 3, area = 481, level = 0, x = 28.10, y = 49.00, text = "The Aldor"},
 		[12406] = {side = 3, area = 475, level = 0, x = 62.90, y = 38.30},
 		[12407] = {side = 3, area = 479, level = 0, x = 32.10, y = 64.50},
 		[12408] = {side = 3, area = 479, level = 0, x = 43.40, y = 36.10},
-		[12409] = {side = 3, area = 473, level = 0, x = 56.30, y = 59.80},
+		[12409] = {side = 3, area = 473, level = 0, x = 56.30, y = 59.80, text = "The Scryers"},
 	},
 	["Northrend"] = {
 		[12940] = {side = 3, area = 496, level = 0, x = 59.30, y = 57.20},
@@ -273,6 +282,7 @@ ns.modules[texture] = {
 
 		for _, entries in pairs(db) do
 			for quest, data in pairs(entries) do
+				quest = data.quest or quest
 				if (data.side == 3 or data.side == faction) and not ns:IsQuestCompleted(quest) then
 					table_insert(nodes, {
 						quest = quest,
@@ -282,7 +292,7 @@ ns.modules[texture] = {
 						y = data.y/100,
 						title = data.title,
 						text = data.text,
-						nowrap = false,
+						phase = data.phase,
 					})
 				end
 			end
@@ -294,6 +304,9 @@ ns.modules[texture] = {
 	end,
 
 	OnShow = function(self)
+		if self.node.phase then
+			self.icon:SetTexture(iconTexturePhase)
+		end
 	end,
 
 	OnEnter = function(self)
@@ -301,15 +314,24 @@ ns.modules[texture] = {
 		if self.node.title then
 			WorldMapTooltip:SetText(self.node.title)
 		else
-			WorldMapTooltip:SetText(string_format("Quest: %d", self.node.quest))
+			if self.node.phase then
+				WorldMapTooltip:SetText(iconTitle .. ": Phase")
+			else
+				WorldMapTooltip:SetText(iconTitle)
+			end
+		end
+		if self.node.phase then
+			WorldMapTooltip:AddLine("Speak to Zidormi in order to interract\nwith the Candy Buckets in this zone.", 1, 1, 1, false)
 		end
 		if self.node.text then
-			WorldMapTooltip:AddLine(self.node.text, 1, 1, 1, not self.node.nowrap)
-		else
-			WorldMapTooltip:AddLine(string_format("%.1f, %.1f", self.node.x * 100, self.node.y * 100), 1, 1, 1, true)
+			WorldMapTooltip:AddLine(self.node.text, 1, 1, 1, true)
+		end
+		WorldMapTooltip:AddLine(string_format("%.1f, %.1f", self.node.x * 100, self.node.y * 100), 1, 1, 1, false)
+		if not self.node.phase then
+			WorldMapTooltip:AddLine(string_format("Quest %d", self.node.quest), .8, .8, .8, false)
 		end
 		if ns.WaypointAddons:GetAddon() then
-			WorldMapTooltip:AddLine("<Click for waypoint.>", .8, .8, .8, true)
+			WorldMapTooltip:AddLine("<Click for waypoint.>", .8, .8, .8, false)
 		end
 		WorldMapTooltip:Show()
 	end,

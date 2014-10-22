@@ -1,4 +1,11 @@
 local _G = _G
+local ipairs = ipairs
+local pairs = pairs
+local string_format = string.format
+local table_insert = table.insert
+local table_remove = table.remove
+local time = time
+local type = type
 local CreateFrame = CreateFrame
 local GetCurrentMapAreaID = GetCurrentMapAreaID
 local GetCurrentMapContinent = GetCurrentMapContinent
@@ -6,17 +13,23 @@ local GetQuestsCompleted = GetQuestsCompleted
 local IsAddOnLoaded = IsAddOnLoaded
 local IsModifierKeyDown = IsModifierKeyDown
 local UnitFactionGroup = UnitFactionGroup
-local ipairs = ipairs
-local pairs = pairs
-local string_format = string.format
-local table_insert = table.insert
-local table_remove = table.remove
-local type = type
 
 local _, ns = ...
 ns.modules = {}
 ns.widgets = {}
-ns.quests = nil
+ns.quests = {}
+
+function ns.quests:CacheQuests(force)
+	if force or not self.updated or time() - self.updated >= 1 then
+		self.updated = time()
+		GetQuestsCompleted(self)
+	end
+end
+
+function ns.quests:IsCompleted(questID)
+	self:CacheQuests()
+	return self[questID]
+end
 
 local Astrolabe = DongleStub("Astrolabe-1.0")
 local worldMapFrame = WorldMapButton
@@ -187,14 +200,11 @@ function ns:GetPlayerFaction()
 end
 
 function ns:IsQuestCompleted(questID)
-	if not ns.quests then
-		ns.quests = GetQuestsCompleted()
-	end
-	return ns.quests[questID]
+	return ns.quests:IsCompleted(questID)
 end
 
 function ns:QuestCompleted(questID)
-	GetQuestsCompleted(ns.quests)
+	ns.quests:CacheQuests(1)
 
 	for _, module in pairs(ns.modules) do
 		if module.loaded then
@@ -222,7 +232,7 @@ function ns:QuestCompleted(questID)
 end
 
 function ns:UpdateNodes()
-	if not worldMapFrame:IsShown() then
+	if not worldMapFrame:IsVisible() then
 		return
 	end
 
