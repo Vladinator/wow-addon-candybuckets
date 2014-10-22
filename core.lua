@@ -1,3 +1,5 @@
+local DEBUG = true
+
 local _G = _G
 local CalendarGetDate = CalendarGetDate
 local CalendarGetDayEvent = CalendarGetDayEvent
@@ -25,8 +27,10 @@ end
 function addon:QueryCalendar(check)
 	addon:RegisterEvent("CALENDAR_UPDATE_EVENT_LIST")
 
-	local _, month, day, year = CalendarGetDate()
-	CalendarSetAbsMonth(month, year)
+	if type(CalendarFrame) ~= "table" or not CalendarFrame:IsShown() then
+		local _, month, _, year = CalendarGetDate()
+		CalendarSetAbsMonth(month, year)
+	end
 
 	if check then
 		addon:CheckCalendar()
@@ -43,6 +47,16 @@ function addon:CheckCalendar()
 		local _, _, _, calendarType, _, _, texture = CalendarGetDayEvent(monthOffset, day, i)
 
 		if calendarType == "HOLIDAY" then
+			if ns:CanLoadEvent(texture) then
+				ns:LoadEvent(texture)
+
+				numLoaded = numLoaded + 1
+			end
+		end
+	end
+
+	if DEBUG then
+		for texture, module in pairs(ns.modules) do
 			if ns:CanLoadEvent(texture) then
 				ns:LoadEvent(texture)
 

@@ -300,11 +300,13 @@ function ns:CreateOrUpdateWidget(node, module)
 
 	if module then
 		widget.icon:SetTexture(module.texture)
+		widget:SetScript("OnShow", module.OnShow)
 		widget:SetScript("OnEnter", module.OnEnter)
 		widget:SetScript("OnLeave", module.OnLeave)
 		widget:SetScript("OnClick", ns.WidgetOnClick)
 	else
 		widget.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+		widget:SetScript("OnShow", nil)
 		widget:SetScript("OnEnter", nil)
 		widget:SetScript("OnLeave", nil)
 		widget:SetScript("OnClick", nil)

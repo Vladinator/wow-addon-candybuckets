@@ -1,3 +1,10 @@
+local _G = _G
+local pairs = pairs
+local string_format = string.format
+local table_insert = table.insert
+local table_wipe = table.wipe
+local WorldMapTooltip = WorldMapTooltip
+
 local _, ns = ...
 
 local texture = "Calendar_LunarFestival"
@@ -129,26 +136,40 @@ ns.modules[texture] = {
 		for _, entries in pairs(db) do
 			for quest, data in pairs(entries) do
 				if not ns:IsQuestCompleted(quest) then
-					table.insert(nodes, {
+					table_insert(nodes, {
 						quest = quest,
 						area = data.area,
 						level = data.level,
 						x = data.x/100,
 						y = data.y/100,
+						title = data.title,
+						text = data.text,
+						nowrap = false,
 					})
 				end
 			end
 		end
 
-		table.wipe(db)
+		table_wipe(db)
 		self.loaded = true
 		return true
 	end,
 
+	OnShow = function(self)
+	end,
+
 	OnEnter = function(self)
 		WorldMapTooltip:SetOwner(self, "ANCHOR_RIGHT")
-		WorldMapTooltip:SetText(string.format("Quest: %d", self.node.quest))
-		WorldMapTooltip:AddLine(string.format("%.1f, %.1f", self.node.x * 100, self.node.y * 100), 1, 1, 1, true)
+		if self.node.title then
+			WorldMapTooltip:SetText(self.node.title)
+		else
+			WorldMapTooltip:SetText(string_format("Quest: %d", self.node.quest))
+		end
+		if self.node.text then
+			WorldMapTooltip:AddLine(self.node.text, 1, 1, 1, not self.node.nowrap)
+		else
+			WorldMapTooltip:AddLine(string_format("%.1f, %.1f", self.node.x * 100, self.node.y * 100), 1, 1, 1, true)
+		end
 		if ns.WaypointAddons:GetAddon() then
 			WorldMapTooltip:AddLine("<Click for waypoint.>", .8, .8, .8, true)
 		end
