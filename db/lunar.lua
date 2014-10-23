@@ -174,6 +174,7 @@ ns.modules[texture] = {
 				WorldMapTooltip:SetText(iconTitle)
 			end
 		end
+		WorldMapTooltip:AddLine(GetMapNameByID(self.node.area), 1, .82, 0, false)
 		if self.node.text then
 			WorldMapTooltip:AddLine(self.node.text, 1, 1, 1, true)
 		end

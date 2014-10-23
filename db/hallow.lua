@@ -320,6 +320,7 @@ ns.modules[texture] = {
 				WorldMapTooltip:SetText(iconTitle)
 			end
 		end
+		WorldMapTooltip:AddLine(GetMapNameByID(self.node.area), 1, .82, 0, false)
 		if self.node.phase then
 			WorldMapTooltip:AddLine("Speak to Zidormi in order to interract\nwith the Candy Buckets in this zone.", 1, 1, 1, false)
 		end

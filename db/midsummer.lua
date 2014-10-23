@@ -270,13 +270,9 @@ ns.modules[texture] = {
 		if self.node.title then
 			WorldMapTooltip:SetText(self.node.title)
 		else
-			WorldMapTooltip:SetText(iconTitle)
+			WorldMapTooltip:SetText(iconTitle .. ": " .. (self.node.honor and "Honor" or "Desecrate"))
 		end
-		if self.node.honor then
-			WorldMapTooltip:AddLine("Honor the flame", 1, 1, 0, true)
-		else
-			WorldMapTooltip:AddLine("Desecrate the bonfire", 1, 1, 0, true)
-		end
+		WorldMapTooltip:AddLine(GetMapNameByID(self.node.area), 1, .82, 0, false)
 		if self.node.text then
 			WorldMapTooltip:AddLine(self.node.text, 1, 1, 1, true)
 		end
