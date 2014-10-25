@@ -3,6 +3,7 @@ local pairs = pairs
 local string_format = string.format
 local table_insert = table.insert
 local table_wipe = table.wipe
+local GetMapNameByID = GetMapNameByID
 local WorldMapTooltip = WorldMapTooltip
 
 local _, ns = ...
@@ -126,6 +127,7 @@ local db = {
 ns.modules[texture] = {
 	loaded = false,
 	texture = iconTexture,
+	title = iconTitle,
 	nodes = nodes,
 
 	load = function(self)

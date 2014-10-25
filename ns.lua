@@ -9,6 +9,7 @@ local type = type
 local CreateFrame = CreateFrame
 local GetCurrentMapAreaID = GetCurrentMapAreaID
 local GetCurrentMapContinent = GetCurrentMapContinent
+local GetMapNameByID = GetMapNameByID
 local GetQuestsCompleted = GetQuestsCompleted
 local IsAddOnLoaded = IsAddOnLoaded
 local IsModifierKeyDown = IsModifierKeyDown
@@ -99,12 +100,16 @@ do
 			if everything then
 				for _, node in ipairs(widget.module.nodes) do
 					TomTom:AddMFWaypoint(node.area, node.level, node.x, node.y, {
-						title = string_format("Candy Bucket (%d)", node.quest),
+						title = string_format("%s (%s, %d)", widget.module.title, GetMapNameByID(node.area), node.quest),
+						minimap = true,
+						crazy = true,
 					})
 				end
 			end
 			TomTom:AddMFWaypoint(widget.node.area, widget.node.level, widget.node.x, widget.node.y, {
-				title = string_format("Candy Bucket (%d)", widget.node.quest),
+				title = string_format("%s (%s, %d)", widget.module.title, GetMapNameByID(widget.node.area), widget.node.quest),
+				minimap = true,
+				crazy = true,
 			})
 		end,
 	})
@@ -116,12 +121,12 @@ do
 			if everything then
 				for _, node in ipairs(widget.module.nodes) do
 					TomTomLite:AddWaypoint(node.area, node.level, node.x, node.y, {
-						title = string_format("Candy Bucket (%d)", node.quest),
+						title = string_format("%s (%s, %d)", widget.module.title, GetMapNameByID(node.area), node.quest),
 					})
 				end
 			end
 			TomTomLite:AddWaypoint(widget.node.area, widget.node.level, widget.node.x, widget.node.y, {
-				title = string_format("Candy Bucket (%d)", widget.node.quest),
+				title = string_format("%s (%s, %d)", widget.module.title, GetMapNameByID(widget.node.area), widget.node.quest),
 			})
 		end,
 	})

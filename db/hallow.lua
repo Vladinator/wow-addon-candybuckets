@@ -278,6 +278,7 @@ local db = {
 ns.modules[texture] = {
 	loaded = false,
 	texture = iconTexture,
+	title = iconTitle,
 	nodes = nodes,
 
 	load = function(self)
