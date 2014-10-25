@@ -19,10 +19,11 @@ local nodes = {}
 
 local db = {
 	["Information"] = {
-		{quest = 12349, side = 1, area = 141, level = 0, x = 56.18, y = 50.02, phase = 1},
-		{quest = 12349, side = 1, area = 851, level = 0, x = 56.18, y = 50.02, phase = 1},
-		{quest = 28960, side = 1, area = 19, level = 0, x = 48.16, y = 7.28, phase = 1},
-		{quest = 28961, side = 1, area = 19, level = 0, x = 48.16, y = 7.28, phase = 1},
+		{quest = 12349, side = 1, area = 141, level = 0, x = 56.18, y = 50.02, phase = 1}, -- Westfall
+		{quest = 12349, side = 1, area = 851, level = 0, x = 56.18, y = 50.02, phase = 1}, -- Westfall
+		{quest = 28960, side = 1, area = 19, level = 0, x = 48.16, y = 7.28, phase = 1}, -- Blasted Lands, Nethergarde Keep
+		{quest = 28961, side = 1, area = 19, level = 0, x = 48.16, y = 7.28, phase = 1}, -- Blasted Lands, Surwich
+		{quest = 28959, side = 2, area = 19, level = 0, x = 48.16, y = 7.28, phase = 1}, -- Blasted Lands, Dreadmaul Hold
 		{quest = 12404, side = 1, area = 481, level = 0, x = 59.8, y = 41.6, requires = {932, 934}}, -- The Aldor (quest 10551)
 		{quest = 12409, side = 1, area = 481, level = 0, x = 59.8, y = 41.6, requires = {932, 934}}, -- The Scryers (quest 10552)
 	},
@@ -87,7 +88,7 @@ local db = {
 		[28955] = {side = 3, area = 17, level = 0, x = 65.90, y = 35.80},
 		[28956] = {side = 1, area = 17, level = 0, x = 21.00, y = 56.50},
 		[28957] = {side = 2, area = 17, level = 0, x = 18.50, y = 42.80},
-		[28959] = {side = 2, area = 19, level = 0, x = 40.50, y = 11.50},
+		[28959] = {side = 2, area = 19, level = 0, x = 40.50, y = 11.50, text = "Phased"},
 		[28960] = {side = 1, area = 19, level = 0, x = 60.70, y = 14.20, text = "Phased"},
 		[28961] = {side = 1, area = 19, level = 0, x = 44.50, y = 87.70, text = "Phased"},
 		[28962] = {side = 2, area = 24, level = 0, x = 60.30, y = 63.80},
