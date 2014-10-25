@@ -1,8 +1,11 @@
 local _G = _G
 local pairs = pairs
+local select = select
 local string_format = string.format
 local table_insert = table.insert
 local table_wipe = table.wipe
+local GetFactionInfoByID = GetFactionInfoByID
+local GetMapNameByID = GetMapNameByID
 local WorldMapTooltip = WorldMapTooltip
 
 local _, ns = ...
@@ -11,6 +14,7 @@ local texture = "Calendar_HallowsEnd"
 local iconTitle = "Candy Bucket"
 local iconTexture = "Interface\\Icons\\Achievement_Halloween_Candy_01"
 local iconTexturePhase = "Interface\\Icons\\Spell_Shadow_Teleport"
+local iconTextureRequires = "Interface\\Icons\\Spell_Shadow_Teleport"
 local nodes = {}
 
 local db = {
@@ -19,6 +23,8 @@ local db = {
 		{quest = 12349, side = 1, area = 851, level = 0, x = 56.18, y = 50.02, phase = 1},
 		{quest = 28960, side = 1, area = 19, level = 0, x = 48.16, y = 7.28, phase = 1},
 		{quest = 28961, side = 1, area = 19, level = 0, x = 48.16, y = 7.28, phase = 1},
+		{quest = 12404, side = 1, area = 481, level = 0, x = 59.8, y = 41.6, requires = {932, 934}}, -- The Aldor (quest 10551)
+		{quest = 12409, side = 1, area = 481, level = 0, x = 59.8, y = 41.6, requires = {932, 934}}, -- The Scryers (quest 10552)
 	},
 	["Phased"] = {
 		[12340] = {side = 1, area = 39, level = 0, x = 56.70, y = 47.22, text = "Phased"},
@@ -28,8 +34,8 @@ local db = {
 		[12370] = {side = 2, area = 480, level = 0, x = 67.70, y = 73.50},
 		[12383] = {side = 2, area = 851, level = 0, x = 36.80, y = 32.50},
 		[12398] = {side = 3, area = 851, level = 0, x = 41.90, y = 74.10},
-		[12404] = {side = 3, area = 481, level = 0, x = 56.20, y = 81.80, text = "The Scryers"},
-		[12409] = {side = 3, area = 473, level = 0, x = 61.00, y = 28.20, text = "The Aldor"},
+		[12404] = {side = 3, area = 481, level = 0, x = 56.20, y = 81.80, faction = 934, text = "The Scryers"},
+		[12409] = {side = 3, area = 473, level = 0, x = 61.00, y = 28.20, faction = 932, text = "The Aldor"},
 		[13463] = {side = 3, area = 924, level = 1, x = 48.30, y = 40.80},
 		[13472] = {side = 3, area = 924, level = 2, x = 37.60, y = 59.80},
 		[28973] = {side = 2, area = 770, level = 0, x = 53.50, y = 42.90},
@@ -193,11 +199,11 @@ local db = {
 		[12394] = {side = 2, area = 475, level = 0, x = 76.20, y = 60.40},
 		[12395] = {side = 2, area = 473, level = 0, x = 30.30, y = 27.80},
 		[12403] = {side = 3, area = 467, level = 0, x = 78.50, y = 62.90},
-		[12404] = {side = 3, area = 481, level = 0, x = 28.10, y = 49.00, text = "The Aldor"},
+		[12404] = {side = 3, area = 481, level = 0, x = 28.10, y = 49.00, faction = 932, text = "The Aldor"},
 		[12406] = {side = 3, area = 475, level = 0, x = 62.90, y = 38.30},
 		[12407] = {side = 3, area = 479, level = 0, x = 32.10, y = 64.50},
 		[12408] = {side = 3, area = 479, level = 0, x = 43.40, y = 36.10},
-		[12409] = {side = 3, area = 473, level = 0, x = 56.30, y = 59.80, text = "The Scryers"},
+		[12409] = {side = 3, area = 473, level = 0, x = 56.30, y = 59.80, faction = 934, text = "The Scryers"},
 	},
 	["Northrend"] = {
 		[12940] = {side = 3, area = 496, level = 0, x = 59.30, y = 57.20},
@@ -293,6 +299,8 @@ ns.modules[texture] = {
 						title = data.title,
 						text = data.text,
 						phase = data.phase,
+						requires = data.requires,
+						faction = data.faction,
 					})
 				end
 			end
@@ -306,6 +314,13 @@ ns.modules[texture] = {
 	OnShow = function(self)
 		if self.node.phase then
 			self.icon:SetTexture(iconTexturePhase)
+		elseif self.node.requires then
+			self.icon:SetTexture(iconTextureRequires)
+		end
+		if self.node.faction and select(3, GetFactionInfoByID(self.node.faction)) < 5 then
+			self:Hide()
+		elseif self.node.requires and (select(3, GetFactionInfoByID(self.node.requires[1])) > 4 or select(3, GetFactionInfoByID(self.node.requires[2])) > 4) then
+			self:Hide()
 		end
 	end,
 
@@ -316,19 +331,23 @@ ns.modules[texture] = {
 		else
 			if self.node.phase then
 				WorldMapTooltip:SetText(iconTitle .. ": Phase")
+			elseif self.node.requires then
+				WorldMapTooltip:SetText(iconTitle .. ": Aldor or Scryers")
 			else
 				WorldMapTooltip:SetText(iconTitle)
 			end
 		end
 		WorldMapTooltip:AddLine(GetMapNameByID(self.node.area), 1, .82, 0, false)
 		if self.node.phase then
-			WorldMapTooltip:AddLine("Speak to Zidormi in order to interract\nwith the Candy Buckets in this zone.", 1, 1, 1, false)
+			WorldMapTooltip:AddLine("Speak to Zidormi in order to interact\nwith the Candy Buckets in this zone.", 1, 1, 1, false)
+		elseif self.node.requires then
+			WorldMapTooltip:AddLine("The Aldor and Scryers require you to pick a side\nbefore they allow you to take their candy.\n\nSpeak to |cffFFFF00Haggard War Veteran|r and complete |cffFFFF00A'dal|r,\nthen speak to |cffFFFF00Archmage Khadgar|r and complete |cffFFFF00City of Light|r.\nYou can now decide which side to support.\n", 1, 1, 1, false)
 		end
 		if self.node.text then
 			WorldMapTooltip:AddLine(self.node.text, 1, 1, 1, true)
 		end
 		WorldMapTooltip:AddLine(string_format("%.1f, %.1f", self.node.x * 100, self.node.y * 100), 1, 1, 1, false)
-		if not self.node.phase then
+		if not self.node.phase and not self.node.requires then
 			WorldMapTooltip:AddLine(string_format("Quest %d", self.node.quest), .8, .8, .8, false)
 		end
 		if ns.WaypointAddons:GetAddon() then
