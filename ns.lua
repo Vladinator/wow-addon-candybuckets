@@ -98,6 +98,7 @@ do
 		name = "TomTom",
 		func = function(self, widget, everything)
 			if everything then
+				TomTom:ClearAllWaypoints()
 				for _, node in ipairs(widget.module.nodes) do
 					TomTom:AddMFWaypoint(node.area, node.level, node.x, node.y, {
 						title = string_format("%s (%s, %d)", widget.module.title, GetMapNameByID(node.area), node.quest),
@@ -111,6 +112,9 @@ do
 				minimap = true,
 				crazy = true,
 			})
+			if everything then
+				TomTom:SetClosestWaypoint()
+			end
 		end,
 	})
 

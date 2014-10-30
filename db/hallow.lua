@@ -24,8 +24,8 @@ local db = {
 		{quest = 28960, side = 1, area = 19, level = 0, x = 48.16, y = 7.28, phase = 1}, -- Blasted Lands, Nethergarde Keep
 		{quest = 28961, side = 1, area = 19, level = 0, x = 48.16, y = 7.28, phase = 1}, -- Blasted Lands, Surwich
 		{quest = 28959, side = 2, area = 19, level = 0, x = 48.16, y = 7.28, phase = 1}, -- Blasted Lands, Dreadmaul Hold
-		{quest = 12404, side = 1, area = 481, level = 0, x = 59.8, y = 41.6, requires = {932, 934}}, -- The Aldor (quest 10551)
-		{quest = 12409, side = 1, area = 481, level = 0, x = 59.8, y = 41.6, requires = {932, 934}}, -- The Scryers (quest 10552)
+		--{quest = 12404, side = 1, area = 481, level = 0, x = 59.8, y = 41.6, requires = {932, 934}}, -- The Aldor (quest 10551)
+		--{quest = 12409, side = 1, area = 481, level = 0, x = 59.8, y = 41.6, requires = {932, 934}}, -- The Scryers (quest 10552)
 	},
 	["Phased"] = {
 		[12340] = {side = 1, area = 39, level = 0, x = 56.70, y = 47.22, text = "Phased"},
@@ -319,10 +319,10 @@ ns.modules[texture] = {
 		elseif self.node.requires then
 			self.icon:SetTexture(iconTextureRequires)
 		end
-		if self.node.faction and select(3, GetFactionInfoByID(self.node.faction)) < 5 then
+		if self.node.faction and select(3, GetFactionInfoByID(self.node.faction)) < 4 then -- hide bucket if it's Aldor/Scryers and you are below neutral
 			self:Hide()
-		elseif self.node.requires and (select(3, GetFactionInfoByID(self.node.requires[1])) > 4 or select(3, GetFactionInfoByID(self.node.requires[2])) > 4) then
-			self:Hide()
+		-- elseif self.node.requires and (select(3, GetFactionInfoByID(self.node.requires[1])) > 4 or select(3, GetFactionInfoByID(self.node.requires[2])) > 4) then
+		-- 	self:Hide()
 		end
 	end,
 
@@ -333,8 +333,8 @@ ns.modules[texture] = {
 		else
 			if self.node.phase then
 				WorldMapTooltip:SetText(iconTitle .. ": Phase")
-			elseif self.node.requires then
-				WorldMapTooltip:SetText(iconTitle .. ": Aldor or Scryers")
+			-- elseif self.node.requires then
+			-- 	WorldMapTooltip:SetText(iconTitle .. ": Aldor or Scryers")
 			else
 				WorldMapTooltip:SetText(iconTitle)
 			end
@@ -342,14 +342,14 @@ ns.modules[texture] = {
 		WorldMapTooltip:AddLine(GetMapNameByID(self.node.area), 1, .82, 0, false)
 		if self.node.phase then
 			WorldMapTooltip:AddLine("Speak to Zidormi in order to interact\nwith the Candy Buckets in this zone.", 1, 1, 1, false)
-		elseif self.node.requires then
-			WorldMapTooltip:AddLine("The Aldor and Scryers require you to pick a side\nbefore they allow you to take their candy.\n\nSpeak to |cffFFFF00Haggard War Veteran|r and complete |cffFFFF00A'dal|r,\nthen speak to |cffFFFF00Archmage Khadgar|r and complete |cffFFFF00City of Light|r.\nYou can now decide which side to support.\n", 1, 1, 1, false)
+		-- elseif self.node.requires then
+		-- 	WorldMapTooltip:AddLine("The Aldor and Scryers require you to pick a side\nbefore they allow you to take their candy.\n\nSpeak to |cffFFFF00Haggard War Veteran|r and complete |cffFFFF00A'dal|r,\nthen speak to |cffFFFF00Archmage Khadgar|r and complete |cffFFFF00City of Light|r.\nYou can now decide which side to support.\n", 1, 1, 1, false)
 		end
 		if self.node.text then
 			WorldMapTooltip:AddLine(self.node.text, 1, 1, 1, true)
 		end
 		WorldMapTooltip:AddLine(string_format("%.1f, %.1f", self.node.x * 100, self.node.y * 100), 1, 1, 1, false)
-		if not self.node.phase and not self.node.requires then
+		if not self.node.phase then -- and not self.node.requires
 			WorldMapTooltip:AddLine(string_format("Quest %d", self.node.quest), .8, .8, .8, false)
 		end
 		if ns.WaypointAddons:GetAddon() then

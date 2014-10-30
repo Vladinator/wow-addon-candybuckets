@@ -40,8 +40,9 @@ function addon:QueryCalendar(check)
 end
 
 function addon:CheckCalendar()
-	local _, _, day = CalendarGetDate()
-	local monthOffset = 0
+	local _, month, day, year = CalendarGetDate()
+	local curMonth, curYear = CalendarGetMonth()
+	local monthOffset = -12 * (curYear - year) + month - curMonth
 	local numEvents = CalendarGetNumDayEvents(monthOffset, day)
 	local numLoaded = 0
 
