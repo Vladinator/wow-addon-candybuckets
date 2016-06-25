@@ -15,7 +15,7 @@ local IsAddOnLoaded = IsAddOnLoaded
 local IsModifierKeyDown = IsModifierKeyDown
 local UnitFactionGroup = UnitFactionGroup
 
-local _, ns = ...
+local addonName, ns = ...
 ns.modules = {}
 ns.widgets = {}
 ns.quests = {}
@@ -32,7 +32,8 @@ function ns.quests:IsCompleted(questID)
 	return self[questID]
 end
 
-local Astrolabe = DongleStub("Astrolabe-1.0")
+-- local HBD = LibStub("HereBeDragons-1.0")
+local HBDPins = LibStub("HereBeDragons-Pins-1.0")
 local worldMapFrame = WorldMapButton
 
 local IsAcceptedZone
@@ -74,6 +75,7 @@ do
 	IsAcceptedZone[5][751] = true -- The Maelstrom
 	IsAcceptedZone[6][862] = true -- Pandaria
 	IsAcceptedZone[7][962] = true -- Draenor
+	IsAcceptedZone[8][1007] = true -- Broken Isles
 
 	-- Vashj'ir
 	for k, v in ipairs({610, 613, 614, 615}) do
@@ -83,6 +85,16 @@ do
 	-- Dalaran
 	for k, v in ipairs({485, 504, 510, 924}) do -- Northrend, Dalaran#504, Crystalsong Forest, Dalaran#924
 		IsAcceptedZone[4][v] = false
+	end
+
+	-- Garrison
+	for k, v in ipairs({971, 973, 991, 974, 975, 976, 980, 990, 981, 982}) do -- garrisonsmvalliance, garrisonsmvalliance_tier1, garrisonsmvalliance_tier2, garrisonsmvalliance_tier3, garrisonsmvalliance_tier4, garrisonffhorde, garrisonffhorde_tier1, garrisonffhorde_tier2, garrisonffhorde_tier3, garrisonffhorde_tier4
+		IsAcceptedZone[7][v] = true
+	end
+
+	-- Broken Isles
+	for k, v in ipairs({1014}) do -- Dalaran(Legion)
+		IsAcceptedZone[8][v] = true
 	end
 
 	useEmpty = true
@@ -98,7 +110,6 @@ do
 		name = "TomTom",
 		func = function(self, widget, everything)
 			if everything then
-				TomTom:ClearAllWaypoints()
 				for _, node in ipairs(widget.module.nodes) do
 					TomTom:AddMFWaypoint(node.area, node.level, node.x, node.y, {
 						title = string_format("%s (%s, %d)", widget.module.title, GetMapNameByID(node.area), node.quest),
@@ -185,6 +196,10 @@ function ns:CanLoadEvent(texture)
 	return type(ns.modules[texture]) == "table" and not ns.modules[texture].loaded
 end
 
+function ns:CanUnloadEvent(texture)
+	return type(ns.modules[texture]) == "table" and ns.modules[texture].loaded
+end
+
 function ns:LoadEvent(texture)
 	local loaded = ns.modules[texture]:load()
 
@@ -193,6 +208,33 @@ function ns:LoadEvent(texture)
 	end
 
 	return loaded
+end
+
+function ns:UnloadEvent(texture)
+	local module = ns.modules[texture]
+	local remove = {}
+
+	for _, node in pairs(module.nodes) do
+		if node then
+			ns:RemoveNode(node)
+			table_insert(remove, node)
+		end
+	end
+
+	while #remove > 0 do
+		local removeNode = table_remove(remove, 1)
+
+		for index, node in pairs(module.nodes) do
+			if node == removeNode then
+				table_remove(module.nodes, index)
+				break
+			end
+		end
+	end
+
+	module.loaded = false
+	ns:UpdateNodes()
+	return true
 end
 
 function ns:GetPlayerFaction()
@@ -271,53 +313,44 @@ function ns:RemoveNode(node)
 	if widget then
 		widget:Hide()
 
-		-- TODO: minimap icons
-		-- Astrolabe:RemoveIconFromMinimap(widget)
+		HBDPins:RemoveWorldMapIcon(addonName, widget)
 
 		widget.node, widget.module = nil
 	end
 end
 
-function ns:GetWidget(node)
+function ns:GetWidget(node, createIfNotFound)
+	-- find node by reference
 	for i = 1, #ns.widgets do
 		local widget = ns.widgets[i]
 
-		if widget:IsShown() then
-			if widget.node == node then
+		if widget:IsShown() and widget.node == node then
+			return widget
+		end
+	end
+
+	if createIfNotFound then
+		-- find available
+		for i = 1, #ns.widgets do
+			local widget = ns.widgets[i]
+
+			if not widget:IsShown() then
 				return widget
 			end
 		end
+
+		-- create widget
+		local widget = ns:CreateWidget()
+		table_insert(ns.widgets, widget)
+		return widget
 	end
 end
 
 function ns:CreateOrUpdateWidget(node, module)
-	local widget = ns:GetWidget(node)
-
-	if widget then
-		widget:Hide()
-
-		widget.node, widget.module = nil
-	end
-
-	widget = nil
-	for i = 1, #ns.widgets do
-		local w = ns.widgets[i]
-
-		if not w:IsShown() then
-			widget = w
-			break
-		end
-	end
-
-	if not widget then
-		widget = ns:CreateWidget()
-
-		table_insert(ns.widgets, widget)
-	end
-
+	local widget = ns:GetWidget(node, true)
 	widget.node, widget.module = node, module
 
-	if module then
+	if node and module then
 		widget.icon:SetTexture(module.texture)
 		widget:SetScript("OnShow", module.OnShow)
 		widget:SetScript("OnEnter", module.OnEnter)
@@ -331,13 +364,12 @@ function ns:CreateOrUpdateWidget(node, module)
 		widget:SetScript("OnClick", nil)
 	end
 
-	Astrolabe:PlaceIconOnWorldMap(worldMapFrame, widget, node.area, node.level, node.x, node.y)
 	widget:SetParent(worldMapFrame)
 	widget:SetFrameStrata("HIGH")
 	widget:SetFrameLevel(255)
 
-	-- TODO: minimap icons
-	-- Astrolabe:PlaceIconOnMinimap(widget, node.area, node.level, node.x, node.y)
+	widget:Hide() -- will be shown by HBD when added to the world map (triggers OnShow)
+	HBDPins:AddWorldMapIconMF(addonName, widget, node.area, node.level, node.x, node.y)
 end
 
 function ns:CreateWidget()

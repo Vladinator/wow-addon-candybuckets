@@ -239,7 +239,7 @@ local db = {
 		[13471] = {side = 2, area = 495, level = 0, x = 67.60, y = 50.60},
 		[13472] = {side = 3, area = 504, level = 2, x = 38.10, y = 60.50},
 		[13473] = {side = 1, area = 504, level = 1, x = 42.60, y = 63.40},
-		[13474] = {side = 2, area = 504, level = 0, x = 49.10, y = 39.70},
+		[13474] = {side = 2, area = 504, level = 0, x = 66.60, y = 30.10},
 		[13501] = {side = 2, area = 486, level = 0, x = 49.70, y = 10.00},
 		[13548] = {side = 2, area = 495, level = 0, x = 37.10, y = 49.60},
 	},
@@ -272,6 +272,12 @@ local db = {
 		[32050] = {side = 2, area = 806, level = 0, x = 28.45, y = 13.27},
 		[32051] = {side = 3, area = 809, level = 0, x = 62.50, y = 28.90},
 		[32052] = {side = 1, area = 811, level = 0, x = 87.00, y = 68.90},
+	},
+	["Draenor_Garrison_Alliance"] = {
+		[39657] = {side = 1, area = 971, level = 0, x = 43.75, y = 51.58},
+	},
+	["Draenor_Garrison_Horde"] = {
+		[39657] = {side = 2, area = 976, level = 0, x = 50.00, y = 50.00}, -- WIP
 	},
 }
 
@@ -308,7 +314,6 @@ ns.modules[texture] = {
 			end
 		end
 
-		table_wipe(db)
 		self.loaded = true
 		return true
 	end,

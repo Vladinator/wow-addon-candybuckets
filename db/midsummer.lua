@@ -12,9 +12,16 @@ local texture = "Calendar_Midsummer"
 local iconTitle = "Bonfire"
 local iconTexture = "Interface\\Icons\\Spell_Fire_MasterOfElements"
 local iconTextureHonor = "Interface\\Icons\\INV_SummerFest_FireSpirit"
+local iconTexturePhase = "Interface\\Icons\\Spell_Shadow_Teleport"
 local nodes = {}
 
 local db = {
+	["Information"] = {
+		{quest = 11737, area = 19, side = 2, level = 0, x = 48.16, y = 7.28, phase = 1}, -- Blasted Lands
+		{quest = 11808, area = 19, side = 1, level = 0, x = 48.16, y = 7.28, honor = 1, phase = 1}, -- Blasted Lands
+		{quest = 28917, area = 19, side = 1, level = 0, x = 48.16, y = 7.28, phase = 1}, -- Blasted Lands
+		{quest = 28930, area = 19, side = 2, level = 0, x = 48.16, y = 7.28, honor = 1, phase = 1}, -- Blasted Lands
+	},
   ["Deepholm"] = {
     [29036] = {area = 640, side = 3, level = 0, x = 49.40, y = 51.40, honor = 1},
   },
@@ -24,7 +31,7 @@ local db = {
     [11583] = {area = 39, side = 1, level = 0, x = 44.60, y = 62.00, honor = 1},
     [11584] = {area = 21, side = 2, level = 0, x = 49.60, y = 38.20, honor = 1},
     [11732] = {area = 16, side = 2, level = 0, x = 44.20, y = 45.80},
-    [11737] = {area = 19, side = 2, level = 0, x = 55.20, y = 15.30},
+    [11737] = {area = 19, side = 2, level = 0, x = 55.20, y = 15.30, text = "Phased"},
     [11739] = {area = 29, side = 2, level = 0, x = 68.60, y = 59.90},
     [11742] = {area = 27, side = 2, level = 0, x = 53.80, y = 44.70},
     [11743] = {area = 34, side = 2, level = 0, x = 73.20, y = 54.90},
@@ -44,7 +51,7 @@ local db = {
     [11786] = {area = 20, side = 1, level = 0, x = 56.90, y = 51.80},
     [11801] = {area = 673, side = 1, level = 0, x = 50.60, y = 70.70},
     [11804] = {area = 16, side = 1, level = 0, x = 44.20, y = 45.80, honor = 1},
-    [11808] = {area = 19, side = 1, level = 0, x = 55.60, y = 15.00, honor = 1},
+    [11808] = {area = 19, side = 1, level = 0, x = 55.60, y = 15.00, honor = 1, text = "Phased"},
     [11810] = {area = 29, side = 1, level = 0, x = 68.20, y = 60.60, honor = 1},
     [11813] = {area = 27, side = 1, level = 0, x = 53.80, y = 45.20, honor = 1},
     [11814] = {area = 34, side = 1, level = 0, x = 73.60, y = 54.60, honor = 1},
@@ -67,13 +74,13 @@ local db = {
     [28911] = {area = 37, side = 1, level = 0, x = 40.80, y = 51.80},
     [28912] = {area = 17, side = 2, level = 0, x = 18.50, y = 56.10},
     [28916] = {area = 38, side = 2, level = 0, x = 70.10, y = 14.80},
-    [28917] = {area = 19, side = 1, level = 0, x = 46.40, y = 14.40},
+    [28917] = {area = 19, side = 1, level = 0, x = 46.40, y = 14.40, text = "Phased"},
     [28918] = {area = 22, side = 1, level = 0, x = 29.10, y = 56.40},
     [28922] = {area = 37, side = 1, level = 0, x = 52.00, y = 63.60, honor = 1},
     [28924] = {area = 37, side = 2, level = 0, x = 40.40, y = 50.80, honor = 1},
     [28925] = {area = 17, side = 1, level = 0, x = 19.00, y = 56.00, honor = 1},
     [28929] = {area = 38, side = 1, level = 0, x = 70.20, y = 15.60, honor = 1},
-    [28930] = {area = 19, side = 2, level = 0, x = 46.20, y = 13.80, honor = 1},
+    [28930] = {area = 19, side = 2, level = 0, x = 46.20, y = 13.80, honor = 1, text = "Phased"},
     [28931] = {area = 22, side = 2, level = 0, x = 29.00, y = 57.40, honor = 1},
     [28943] = {area = 700, side = 2, level = 0, x = 47.00, y = 28.20},
     [28944] = {area = 700, side = 1, level = 0, x = 53.30, y = 46.50},
@@ -241,6 +248,7 @@ ns.modules[texture] = {
 
 		for _, entries in pairs(db) do
 			for quest, data in pairs(entries) do
+				quest = data.quest or quest
 				if (data.side == 3 or data.side == faction) and not ns:IsQuestCompleted(quest) then
 					table_insert(nodes, {
 						quest = quest,
@@ -250,6 +258,7 @@ ns.modules[texture] = {
 						y = data.y/100,
 						title = data.title,
 						text = data.text,
+						phase = data.phase,
 						honor = data.honor,
 					})
 				end
@@ -262,7 +271,9 @@ ns.modules[texture] = {
 	end,
 
 	OnShow = function(self)
-		if self.node.honor then
+		if self.node.phase then
+			self.icon:SetTexture(iconTexturePhase)
+		elseif self.node.honor then
 			self.icon:SetTexture(iconTextureHonor)
 		end
 	end,
@@ -272,14 +283,23 @@ ns.modules[texture] = {
 		if self.node.title then
 			WorldMapTooltip:SetText(self.node.title)
 		else
-			WorldMapTooltip:SetText(iconTitle .. ": " .. (self.node.honor and "Honor" or "Desecrate"))
+			if self.node.phase then
+				WorldMapTooltip:SetText(iconTitle .. ": Phase")
+			else
+				WorldMapTooltip:SetText(iconTitle .. ": " .. (self.node.honor and "Honor" or "Desecrate"))
+			end
 		end
 		WorldMapTooltip:AddLine(GetMapNameByID(self.node.area), 1, .82, 0, false)
+		if self.node.phase then
+			WorldMapTooltip:AddLine("Speak to Zidormi in order to interact\nwith the fires in this zone.", 1, 1, 1, false)
+		end
 		if self.node.text then
 			WorldMapTooltip:AddLine(self.node.text, 1, 1, 1, true)
 		end
 		WorldMapTooltip:AddLine(string_format("%.1f, %.1f", self.node.x * 100, self.node.y * 100), 1, 1, 1, false)
-		WorldMapTooltip:AddLine(string_format("Quest %d", self.node.quest), .8, .8, .8, false)
+		if not self.node.phase then -- and not self.node.requires
+			WorldMapTooltip:AddLine(string_format("Quest %d", self.node.quest), .8, .8, .8, false)
+		end
 		if ns.WaypointAddons:GetAddon() then
 			WorldMapTooltip:AddLine("<Click for waypoint.>", .8, .8, .8, false)
 		end

@@ -30,3 +30,6 @@ Thumbs.db
 nppBackup/
 *.bak
 *.out
+
+# Misc
+*.ignore
