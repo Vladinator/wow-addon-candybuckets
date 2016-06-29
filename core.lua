@@ -52,6 +52,10 @@ function addon:CheckCalendar()
 	local numEvents = CalendarGetNumDayEvents(monthOffset, day)
 	local loadedEvents = {}
 
+	if monthOffset ~= 0 then
+		return -- we only care about the current events, so we need the view to be on the current month (otherwise we unload the ongoing events if we change the month manually...)
+	end
+
 	for i = 1, numEvents do
 		local title, hour, minute, calendarType, sequenceType, _, texture = CalendarGetDayEvent(monthOffset, day, i)
 

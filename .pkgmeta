@@ -1,2 +1,6 @@
 package-as: CandyBuckets
 enable-nolib-creation: no
+tools-used:
+		- callbackhandler
+		- herebedragons
+		- libstub
