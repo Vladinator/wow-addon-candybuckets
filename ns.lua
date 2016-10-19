@@ -82,7 +82,7 @@ do
 		IsAcceptedZone[2][v] = false
 	end
 
-	-- Dalaran
+	-- Northrend: Dalaran
 	for k, v in ipairs({485, 504, 510, 924}) do -- Northrend, Dalaran#504, Crystalsong Forest, Dalaran#924
 		IsAcceptedZone[4][v] = false
 	end

@@ -279,6 +279,11 @@ local db = {
 	["Draenor_Garrison_Horde"] = {
 		[39657] = {side = 2, area = 976, level = 0, x = 50.00, y = 50.00}, -- WIP
 	},
+	["The Broken Shore"] = {
+		[43055] = {side = 3, area = 1014, level = 10, x = 47.90, y = 41.80},
+		[43056] = {side = 1, area = 1014, level = 10, x = 41.50, y = 64.00},
+		[43057] = {side = 2, area = 1014, level = 10, x = 67.80, y = 34.60}, -- TODO: coordinates
+	},
 }
 
 ns.modules[texture] = {
