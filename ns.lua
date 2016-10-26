@@ -92,11 +92,6 @@ do
 		IsAcceptedZone[7][v] = true
 	end
 
-	-- Broken Isles
-	for k, v in ipairs({1014}) do -- Dalaran(Legion)
-		IsAcceptedZone[8][v] = true
-	end
-
 	useEmpty = true
 end
 
@@ -256,6 +251,7 @@ end
 
 function ns:QuestCompleted(questID)
 	ns.quests:CacheQuests(1)
+	ns.quests[questID] = true
 
 	for _, module in pairs(ns.modules) do
 		if module.loaded then
@@ -378,12 +374,12 @@ function ns:CreateWidget()
 	widget:SetSize(16, 16)
 	widget:RegisterForClicks("AnyUp")
 
-	widget.icon = widget:CreateTexture(nil, "ARTWORK", 2)
+	widget.icon = widget:CreateTexture(nil, "OVERLAY", 2)
 	widget.icon:SetAllPoints()
 	widget.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
 	widget.icon:SetTexCoord(.15, .85, .15, .85)
 
-	widget.border = widget:CreateTexture(nil, "ARTWORK", 1)
+	widget.border = widget:CreateTexture(nil, "OVERLAY", 1)
 	widget.border:SetPoint("TOPLEFT", -1, 1)
 	widget.border:SetPoint("BOTTOMRIGHT", 1, -1)
 	widget.border:SetTexture(0, 0, 0, 1)

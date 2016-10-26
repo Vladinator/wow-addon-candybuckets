@@ -33,3 +33,7 @@ nppBackup/
 
 # Misc
 *.ignore
+
+# Script related
+*.json
+*.php

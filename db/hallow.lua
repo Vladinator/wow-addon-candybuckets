@@ -70,7 +70,7 @@ local db = {
 		[12336] = {side = 1, area = 301, level = 0, x = 60.50, y = 75.20},
 		[12339] = {side = 1, area = 35, level = 0, x = 35.50, y = 48.50},
 		[12340] = {side = 1, area = 39, level = 0, x = 52.90, y = 53.60, text = "Phased"},
-		[12342] = {side = 1, area = 36, level = 0, x = 27.00, y = 45.00},
+		[12342] = {side = 1, area = 36, level = 0, x = 26.50, y = 41.50},
 		[12343] = {side = 1, area = 40, level = 0, x = 10.80, y = 60.90},
 		[12344] = {side = 1, area = 34, level = 0, x = 73.90, y = 44.30},
 		[12351] = {side = 1, area = 26, level = 0, x = 14.20, y = 44.70},
@@ -282,7 +282,7 @@ local db = {
 	["The Broken Shore"] = {
 		[43055] = {side = 3, area = 1014, level = 10, x = 47.90, y = 41.80},
 		[43056] = {side = 1, area = 1014, level = 10, x = 41.50, y = 64.00},
-		[43057] = {side = 2, area = 1014, level = 10, x = 67.80, y = 34.60}, -- TODO: coordinates
+		[43057] = {side = 2, area = 1014, level = 10, x = 67.00, y = 29.40},
 	},
 }
 
