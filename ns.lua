@@ -342,26 +342,36 @@ function ns:GetWidget(node, createIfNotFound)
 	end
 end
 
+local function WidgetOnShowFullscreenCheck(widget, ...)
+	widget:SetFrameStrata(worldMapFrame:GetFrameStrata())
+	widget:SetFrameLevel(worldMapFrame:GetFrameLevel() + 1000)
+
+	if widget.node and widget.module then
+		widget.module.OnShow(widget)
+	end
+end
+
 function ns:CreateOrUpdateWidget(node, module)
 	local widget = ns:GetWidget(node, true)
 	widget.node, widget.module = node, module
 
 	if node and module then
 		widget.icon:SetTexture(module.texture)
-		widget:SetScript("OnShow", module.OnShow)
 		widget:SetScript("OnEnter", module.OnEnter)
 		widget:SetScript("OnLeave", module.OnLeave)
 		widget:SetScript("OnClick", ns.WidgetOnClick)
 	else
 		widget.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
-		widget:SetScript("OnShow", nil)
 		widget:SetScript("OnEnter", nil)
 		widget:SetScript("OnLeave", nil)
 		widget:SetScript("OnClick", nil)
 	end
 
+	widget:SetScript("OnShow", WidgetOnShowFullscreenCheck)
+	widget:SetScript("OnHide", WidgetOnShowFullscreenCheck)
+
 	widget:SetParent(worldMapFrame)
-	widget:SetFrameStrata("HIGH")
+	widget:SetFrameStrata("DIALOG")
 	widget:SetFrameLevel(255)
 
 	widget:Hide() -- will be shown by HBD when added to the world map (triggers OnShow)
@@ -377,12 +387,13 @@ function ns:CreateWidget()
 	widget.icon = widget:CreateTexture(nil, "OVERLAY", 2)
 	widget.icon:SetAllPoints()
 	widget.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
-	widget.icon:SetTexCoord(.15, .85, .15, .85)
+	-- widget.icon:SetTexCoord(.15, .85, .15, .85) -- can't when we use a mask
+	widget.icon:SetMask("Interface\\CharacterFrame\\TempPortraitAlphaMask")
 
 	widget.border = widget:CreateTexture(nil, "OVERLAY", 1)
-	widget.border:SetPoint("TOPLEFT", -1, 1)
-	widget.border:SetPoint("BOTTOMRIGHT", 1, -1)
-	widget.border:SetTexture(0, 0, 0, 1)
+	-- widget.border:SetPoint("TOPLEFT", -1, 1)
+	-- widget.border:SetPoint("BOTTOMRIGHT", 1, -1)
+	-- widget.border:SetTexture(0, 0, 0, 1)
 
 	return widget
 end
