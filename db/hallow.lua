@@ -10,7 +10,7 @@ local WorldMapTooltip = WorldMapTooltip
 
 local _, ns = ...
 
-local texture = "Calendar_HallowsEnd"
+local texture = ns:GetNormalizedHolidayTexture(235460)
 local iconTitle = "Candy Bucket"
 local iconTexture = "Interface\\Icons\\Achievement_Halloween_Candy_01"
 local iconTexturePhase = "Interface\\Icons\\Spell_Shadow_Teleport"

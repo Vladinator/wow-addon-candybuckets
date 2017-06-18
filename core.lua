@@ -4,7 +4,6 @@ local _G = _G
 local pairs = pairs
 local type = type
 local CalendarGetDate = CalendarGetDate
-local CalendarGetDayEvent = CalendarGetDayEvent
 local CalendarGetMonth = CalendarGetMonth
 local CalendarGetNumDayEvents = CalendarGetNumDayEvents
 local CalendarSetAbsMonth = CalendarSetAbsMonth
@@ -57,22 +56,23 @@ function addon:CheckCalendar()
 	end
 
 	for i = 1, numEvents do
-		local title, hour, minute, calendarType, sequenceType, _, texture = CalendarGetDayEvent(monthOffset, day, i)
+		local event = C_Calendar.GetDayEvent(monthOffset, day, i)
 
-		if calendarType == "HOLIDAY" then
-			local ongoing = sequenceType == "ONGOING" or sequenceType == "INFO" -- TODO: INFO?
+		if event and event.calendarType == "HOLIDAY" then
+			local ongoing = sequenceType == "ONGOING" or sequenceType == "INFO" -- TODO: INFO? DEPRECATED?
+			local texture = ns:GetNormalizedHolidayTexture(event.iconTexture)
 
-			if sequenceType == "START" then
-				ongoing = curHour >= hour and (curHour > hour or curMinute >= minute)
-			elseif sequenceType == "END" then
-				ongoing = curHour <= hour and (curHour < hour or curMinute <= minute)
+			if event.sequenceType == "START" then
+				ongoing = curHour >= event.startTime.hour and (curHour > event.startTime.hour or curMinute >= event.startTime.minute)
+			elseif event.sequenceType == "END" then
+				ongoing = curHour <= event.endTime.hour and (curHour < event.endTime.hour or curMinute <= event.endTime.minute)
 			end
 
 			if ongoing and ns:CanLoadEvent(texture) then
-				DEFAULT_CHAT_FRAME:AddMessage("|cffFFFFFF" .. addonName .. "|r has loaded the module for |cffFFFFFF" .. title .. "|r!", 1, 1, 0)
+				DEFAULT_CHAT_FRAME:AddMessage("|cffFFFFFF" .. addonName .. "|r has loaded the module for |cffFFFFFF" .. event.title .. "|r!", 1, 1, 0)
 				ns:LoadEvent(texture)
 			elseif not ongoing and ns:CanUnloadEvent(texture) then
-				DEFAULT_CHAT_FRAME:AddMessage("|cffFFFFFF" .. addonName .. "|r has unloaded the module for |cffFFFFFF" .. title .. "|r because the event has ended.", 1, 1, 0)
+				DEFAULT_CHAT_FRAME:AddMessage("|cffFFFFFF" .. addonName .. "|r has unloaded the module for |cffFFFFFF" .. event.title .. "|r because the event has ended.", 1, 1, 0)
 				ns:UnloadEvent(texture)
 			end
 

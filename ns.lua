@@ -187,6 +187,17 @@ do
 	end
 end
 
+function ns:GetNormalizedHolidayTexture(texture)
+	if texture == 235461 or texture == 235462 then
+		return 235460
+	elseif texture == 235470 or texture == 235471 then
+		return 235469
+	elseif texture == 235473 or texture == 235474 then
+		return 235472
+	end
+	return texture
+end
+
 function ns:CanLoadEvent(texture)
 	return type(ns.modules[texture]) == "table" and not ns.modules[texture].loaded
 end

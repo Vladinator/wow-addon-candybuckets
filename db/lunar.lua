@@ -8,7 +8,7 @@ local WorldMapTooltip = WorldMapTooltip
 
 local _, ns = ...
 
-local texture = "Calendar_LunarFestival"
+local texture = ns:GetNormalizedHolidayTexture(235469)
 local iconTitle = "Elder"
 local iconTexture = "Interface\\Icons\\INV_Misc_ElvenCoins"
 local iconTextureInstance = "Interface\\Icons\\Spell_Shadow_Teleport"
