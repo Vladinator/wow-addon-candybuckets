@@ -59,7 +59,7 @@ function addon:CheckCalendar()
 		local event = C_Calendar.GetDayEvent(monthOffset, day, i)
 
 		if event and event.calendarType == "HOLIDAY" then
-			local ongoing = sequenceType == "ONGOING" or sequenceType == "INFO" -- TODO: INFO? DEPRECATED?
+			local ongoing = event.sequenceType == "ONGOING" or event.sequenceType == "INFO" -- TODO: INFO? DEPRECATED?
 			local texture = ns:GetNormalizedHolidayTexture(event.iconTexture)
 
 			if event.sequenceType == "START" then
