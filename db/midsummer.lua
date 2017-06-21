@@ -231,6 +231,26 @@ local db = {
     [32509] = {area = 811, side = 2, level = 0, x = 77.75, y = 33.90, honor = 1},
     [32510] = {area = 811, side = 1, level = 0, x = 79.65, y = 37.25, honor = 1},
   },
+	["Draenor"] = {
+		[44570] = {area = 948, side = 3, level = 0, x = 48.00, y = 44.70, honor = 1},
+		[44571] = {area = 946, side = 3, level = 0, x = 43.40, y = 71.80, honor = 1},
+		[44572] = {area = 950, side = 3, level = 0, x = 80.50, y = 47.80, honor = 1},
+		[44573] = {area = 949, side = 3, level = 0, x = 43.90, y = 93.80, honor = 1},
+		[44579] = {area = 947, side = 1, level = 0, x = 42.60, y = 36.00, honor = 1},
+		[44580] = {area = 941, side = 2, level = 0, x = 72.60, y = 65.00, honor = 1},
+		[44583] = {area = 941, side = 1, level = 0, x = 72.60, y = 65.20},
+		[44582] = {area = 947, side = 2, level = 0, x = 42.70, y = 35.90},
+	},
+	["Broken Isles"] = {
+		[44574] = {area = 1015, side = 3, level = 0, x = 48.30, y = 29.70, honor = 1},
+		[44575] = {area = 1018, side = 3, level = 0, x = 44.90, y = 57.90, honor = 1},
+		[44576] = {area = 1024, side = 3, level = 0, x = 55.50, y = 84.50, honor = 1},
+		[44577] = {area = 1017, side = 3, level = 0, x = 32.50, y = 42.00, honor = 1},
+		[44613] = {area = 1033, side = 1, level = 0, x = 23.00, y = 58.40, honor = 1},
+		[44614] = {area = 1033, side = 2, level = 0, x = 30.50, y = 45.40, honor = 1},
+		[44627] = {area = 1033, side = 1, level = 0, x = 30.40, y = 45.30},
+		[44624] = {area = 1033, side = 2, level = 0, x = 22.90, y = 58.30},
+	},
 }
 
 ns.modules[texture] = {
