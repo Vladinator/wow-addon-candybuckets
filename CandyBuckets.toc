@@ -1,18 +1,10 @@
-﻿## Interface: 70200
+﻿## Interface: 80000
 ## Title: CandyBuckets
 ## Notes: Shows map icons for Lunar Festival, Hallow's End and Midsummer Fire Festival!
 ## Author: Vladinator
-## Version: 7.2.5.170621
-
-libs\LibStub\LibStub.lua
-libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
-libs\HereBeDragons-1.0\HereBeDragons-1.0.lua
-libs\HereBeDragons-1.0\HereBeDragons-Pins-1.0.lua
-
-ns.lua
-
+## Version: 8.0.0.180630
 db\hallow.lua
 db\lunar.lua
 db\midsummer.lua
-
 core.lua
+core.xml

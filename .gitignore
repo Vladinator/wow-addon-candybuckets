@@ -37,3 +37,4 @@ nppBackup/
 # Script related
 *.json
 *.php
+*.lua_backup

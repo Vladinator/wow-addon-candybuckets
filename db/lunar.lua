@@ -1,194 +1,114 @@
-local _G = _G
-local pairs = pairs
-local string_format = string.format
-local table_insert = table.insert
-local table_wipe = table.wipe
-local GetMapNameByID = GetMapNameByID
-local WorldMapTooltip = WorldMapTooltip
-
 local _, ns = ...
 
-local texture = ns:GetNormalizedHolidayTexture(235469)
-local iconTitle = "Elder"
-local iconTexture = "Interface\\Icons\\INV_Misc_ElvenCoins"
-local iconTextureInstance = "Interface\\Icons\\Spell_Shadow_Teleport"
-local nodes = {}
+ns.modules = ns.modules or {}
 
-local db = {
-  ["Deepholm"] = {
-    [29735] = {area = 640, level = 0, x = 49.60, y = 54.80},
-    [29734] = {area = 640, level = 0, x = 27.60, y = 69.20},
-  },
-  ["Eastern Kingdoms"] = {
-    [8647] = {area = 19, level = 0, x = 54.20, y = 49.40},
-    [8652] = {area = 20, level = 0, x = 61.80, y = 54.00},
-    [8645] = {area = 21, level = 0, x = 45.00, y = 41.20},
-    [8714] = {area = 22, level = 0, x = 69.00, y = 73.40},
-    [8722] = {area = 22, level = 0, x = 63.40, y = 36.20},
-    [8688] = {area = 23, level = 0, x = 35.40, y = 68.80},
-    [8650] = {area = 23, level = 0, x = 75.60, y = 54.40},
-    [8727] = {area = 23, level = 0, x = 26.90, y = 10.20, instance = 1, title = iconTitle .. ": Instance"},
-    [8643] = {area = 26, level = 0, x = 50.00, y = 48.00},
-    [8653] = {area = 27, level = 0, x = 53.80, y = 49.80},
-    [8651] = {area = 28, level = 0, x = 21.20, y = 79.00},
-    [8683] = {area = 29, level = 0, x = 52.40, y = 24.00},
-    [8644] = {area = 29, level = 0, x = 22.00, y = 33.20, instance = 1, title = iconTitle .. ": Instance"},
-    [8619] = {area = 29, level = 0, x = 19.40, y = 33.20, instance = 1, title = iconTitle .. ": Instance"},
-    [8636] = {area = 29, level = 0, x = 70.00, y = 45.40},
-    [8646] = {area = 30, level = 0, x = 34.40, y = 50.40},
-    [8649] = {area = 30, level = 0, x = 39.80, y = 63.60},
-    [8642] = {area = 35, level = 0, x = 33.20, y = 46.60},
-    [8716] = {area = 37, level = 0, x = 71.00, y = 34.20},
-    [8713] = {area = 38, level = 0, x = 69.60, y = 53.50, instance = 1, title = iconTitle .. ": Instance"},
-    [8675] = {area = 39, level = 0, x = 56.80, y = 47.20},
-    [8866] = {area = 341, level = 0, x = 29.40, y = 17.20},
-    [8648] = {area = 382, level = 0, x = 66.60, y = 38.00},
-    [29738] = {area = 615, level = 0, x = 57.20, y = 86.20},
-    [8674] = {area = 673, level = 0, x = 40.00, y = 72.40},
-    [29737] = {area = 700, level = 0, x = 50.80, y = 70.40},
-    [29736] = {area = 700, level = 0, x = 51.80, y = 33.00},
-  },
-  ["Kalimdor"] = {
-    [8670] = {area = 4, level = 0, x = 53.20, y = 43.60},
-    [8673] = {area = 9, level = 0, x = 48.40, y = 53.20},
-    [8717] = {area = 11, level = 0, x = 48.60, y = 59.20},
-    [8680] = {area = 11, level = 0, x = 68.40, y = 70.00},
-    [8715] = {area = 41, level = 0, x = 56.80, y = 53.00},
-    [8721] = {area = 42, level = 0, x = 49.40, y = 18.80},
-    [8725] = {area = 43, level = 0, x = 35.40, y = 49.00},
-    [8724] = {area = 61, level = 0, x = 77.00, y = 75.60},
-    [8682] = {area = 61, level = 0, x = 46.40, y = 51.00},
-    [8635] = {area = 101, level = 0, x = 30.10, y = 62.50, instance = 1},
-    [8685] = {area = 121, level = 0, x = 62.60, y = 31.00},
-    [8679] = {area = 121, level = 0, x = 76.60, y = 37.80},
-    [8676] = {area = 161, level = 0, x = 34.70, y = 9.90, instance = 1},
-    [8684] = {area = 161, level = 0, x = 51.40, y = 28.80},
-    [8671] = {area = 161, level = 0, x = 37.20, y = 79.00},
-    [8720] = {area = 181, level = 0, x = 64.60, y = 79.20},
-    [8723] = {area = 182, level = 0, x = 38.40, y = 52.80},
-    [8681] = {area = 201, level = 0, x = 50.40, y = 76.20},
-    [8719] = {area = 261, level = 0, x = 53.00, y = 35.40},
-    [8654] = {area = 261, level = 0, x = 30.80, y = 13.40},
-    [8672] = {area = 281, level = 0, x = 59.80, y = 49.80},
-    [8726] = {area = 281, level = 0, x = 53.20, y = 56.60},
-    [8677] = {area = 321, level = 1, x = 52.20, y = 59.80},
-    [8678] = {area = 362, level = 0, x = 73.00, y = 23.80},
-    [8718] = {area = 381, level = 0, x = 39.20, y = 32.00},
-    [29740] = {area = 606, level = 0, x = 62.60, y = 22.80},
-    [29739] = {area = 606, level = 0, x = 26.60, y = 62.00},
-    [8686] = {area = 607, level = 0, x = 41.60, y = 47.40},
-    [29742] = {area = 720, level = 0, x = 65.40, y = 18.60},
-    [29741] = {area = 720, level = 0, x = 31.60, y = 63.00},
-    [8644] = {area = 721, level = 3, x = 61.90, y = 40.50},
-  },
-  ["Northrend"] = {
-    [13012] = {area = 486, level = 0, x = 59.00, y = 65.60},
-    [13029] = {area = 486, level = 0, x = 42.80, y = 49.60},
-    [13033] = {area = 486, level = 0, x = 57.40, y = 43.60},
-    [13021] = {area = 486, level = 0, x = 27.40, y = 26.20, instance = 1},
-    [13016] = {area = 486, level = 0, x = 33.80, y = 34.20},
-    [13014] = {area = 488, level = 0, x = 29.60, y = 55.80},
-    [13022] = {area = 488, level = 0, x = 26.80, y = 47.30, instance = 1},
-    [13031] = {area = 488, level = 0, x = 35.00, y = 48.40},
-    [13019] = {area = 488, level = 0, x = 48.80, y = 78.00},
-    [13030] = {area = 490, level = 0, x = 64.20, y = 47.00},
-    [13025] = {area = 490, level = 0, x = 80.40, y = 37.00},
-    [13013] = {area = 490, level = 0, x = 60.40, y = 27.60},
-    [13017] = {area = 491, level = 0, x = 58.80, y = 49.10, instance = 1},
-    [13067] = {area = 491, level = 0, x = 58.20, y = 42.70, instance = 1},
-    [13024] = {area = 493, level = 0, x = 63.80, y = 49.00},
-    [13018] = {area = 493, level = 0, x = 49.80, y = 63.60},
-    [13015] = {area = 495, level = 0, x = 28.80, y = 73.60},
-    [13066] = {area = 495, level = 0, x = 37.90, y = 26.60, instance = 1},
-    [13028] = {area = 495, level = 0, x = 41.00, y = 84.60},
-    [13020] = {area = 495, level = 0, x = 31.20, y = 37.60},
-    [13032] = {area = 495, level = 0, x = 64.60, y = 51.20},
-    [13065] = {area = 496, level = 0, x = 76.10, y = 20.70, instance = 1},
-    [13027] = {area = 496, level = 0, x = 58.80, y = 56.00},
-    [13023] = {area = 496, level = 0, x = 28.30, y = 88.70, instance = 1},
-    [13026] = {area = 501, level = 0, x = 49.00, y = 14.00},
-  },
-  ["Dungeon"] = {
-    [13021] = {area = 520, level = 1, x = 56.00, y = 64.80},
-    [13017] = {area = 523, level = 1, x = 47.80, y = 71.00},
-    [13067] = {area = 524, level = 2, x = 56.00, y = 36.60},
-    [13066] = {area = 526, level = 1, x = 29.40, y = 61.80},
-    [13065] = {area = 530, level = 1, x = 45.80, y = 62.00},
-    [13022] = {area = 533, level = 1, x = 22.00, y = 44.00},
-    [13023] = {area = 534, level = 1, x = 67.80, y = 78.00},
-    [8676] = {area = 686, level = 0, x = 34.40, y = 39.60},
-    [8713] = {area = 687, level = 1, x = 62.40, y = 34.40},
-    [8619] = {area = 704, level = 1, x = 50.60, y = 63.20},
-    [8635] = {area = 750, level = 2, x = 51.50, y = 93.70},
-    [8727] = {area = 765, level = 1, x = 79.00, y = 21.80},
-  },
-}
-
-ns.modules[texture] = {
-	loaded = false,
-	texture = iconTexture,
-	title = iconTitle,
-	nodes = nodes,
-
-	load = function(self)
-		local faction = ns:GetPlayerFaction()
-
-		if not faction then
-			return false
-		end
-
-		for _, entries in pairs(db) do
-			for quest, data in pairs(entries) do
-				if not ns:IsQuestCompleted(quest) then
-					table_insert(nodes, {
-						quest = quest,
-						area = data.area,
-						level = data.level,
-						x = data.x/100,
-						y = data.y/100,
-						title = data.title,
-						text = data.text,
-						instance = data.instance,
-					})
-				end
-			end
-		end
-
-		table_wipe(db)
-		self.loaded = true
-		return true
-	end,
-
-	OnShow = function(self)
-		if self.node.instance then
-			self.icon:SetTexture(iconTextureInstance)
-		end
-	end,
-
-	OnEnter = function(self)
-		WorldMapTooltip:SetOwner(self, "ANCHOR_RIGHT")
-		if self.node.title then
-			WorldMapTooltip:SetText(self.node.title)
-		else
-			if self.node.instance then
-				WorldMapTooltip:SetText(iconTitle .. ": Instance")
-			else
-				WorldMapTooltip:SetText(iconTitle)
-			end
-		end
-		WorldMapTooltip:AddLine(GetMapNameByID(self.node.area), 1, .82, 0, false)
-		if self.node.text then
-			WorldMapTooltip:AddLine(self.node.text, 1, 1, 1, true)
-		end
-		WorldMapTooltip:AddLine(string_format("%.1f, %.1f", self.node.x * 100, self.node.y * 100), 1, 1, 1, false)
-		WorldMapTooltip:AddLine(string_format("Quest %d", self.node.quest), .8, .8, .8, false)
-		if ns.WaypointAddons:GetAddon() then
-			WorldMapTooltip:AddLine("<Click for waypoint.>", .8, .8, .8, false)
-		end
-		WorldMapTooltip:Show()
-	end,
-
-	OnLeave = function(self)
-		WorldMapTooltip:Hide()
-	end,
+ns.modules["lunar"] = {
+	event = "lunar",
+	texture = {
+		[1] = "Interface\\Icons\\INV_Misc_ElvenCoins",
+		[2] = "Interface\\Icons\\Spell_Shadow_Teleport"
+	},
+	title = {
+		[1] = "Elder",
+		[2] = "Elder (Instance)"
+	},
+	quests = {
+		{ quest = 29735, side = 3, [207] = {49.60, 54.80} },
+		{ quest = 29734, side = 3, [207] = {27.60, 69.20} },
+		{ quest = 8647, side = 3, [17] = {54.20, 49.40} },
+		{ quest = 8652, side = 3, [18] = {61.80, 54.00} },
+		{ quest = 8645, side = 3, [21] = {45.00, 41.20} },
+		{ quest = 8714, side = 3, [22] = {69.20, 73.40} },
+		{ quest = 8722, side = 3, [22] = {63.40, 36.20} },
+		{ quest = 8688, side = 3, [23] = {35.40, 68.80} },
+		{ quest = 8650, side = 3, [23] = {75.60, 54.40} },
+		{ quest = 8727, side = 3, [317] = {79.00, 21.80} },
+		{ quest = 8643, side = 3, [26] = {50.00, 48.00} },
+		{ quest = 8653, side = 3, [27] = {53.80, 49.80} },
+		{ quest = 8651, side = 3, [32] = {21.20, 79.00} },
+		{ quest = 8683, side = 3, [36] = {52.40, 24.00} },
+		{ quest = 8644, side = 3, [252] = {61.90, 40.50} },
+		{ quest = 8619, side = 3, [242] = {50.60, 63.20} },
+		{ quest = 8636, side = 3, [36] = {70.00, 45.40} },
+		{ quest = 8646, side = 3, [37] = {34.40, 50.40} },
+		{ quest = 8649, side = 3, [37] = {39.80, 63.60} },
+		{ quest = 8642, side = 3, [48] = {33.20, 46.60} },
+		{ quest = 8716, side = 3, [50] = {71.00, 34.20} },
+		{ quest = 8713, side = 3, [220] = {62.40, 34.40} },
+		{ quest = 8675, side = 3, [52] = {56.60, 47.00} },
+		{ quest = 8866, side = 3, [87] = {29.40, 17.20} },
+		{ quest = 8648, side = 3, [998] = {66.60, 38.00} },
+		{ quest = 29738, side = 3, [205] = {57.20, 86.20} },
+		{ quest = 8674, side = 3, [210] = {40.00, 72.40} },
+		{ quest = 29737, side = 3, [241] = {50.80, 70.40} },
+		{ quest = 29736, side = 3, [241] = {51.80, 33.00} },
+		{ quest = 8670, side = 3, [1] = {53.20, 43.60} },
+		{ quest = 8673, side = 3, [7] = {48.40, 53.20} },
+		{ quest = 8717, side = 3, [10] = {48.40, 59.20} },
+		{ quest = 8680, side = 3, [10] = {68.40, 70.00} },
+		{ quest = 8715, side = 3, [57] = {56.80, 53.00} },
+		{ quest = 8721, side = 3, [62] = {49.40, 18.80} },
+		{ quest = 8725, side = 3, [63] = {35.40, 49.00} },
+		{ quest = 8724, side = 3, [64] = {77.00, 75.60} },
+		{ quest = 8682, side = 3, [64] = {46.40, 51.00} },
+		{ quest = 8635, side = 3, [281] = {51.50, 93.70} },
+		{ quest = 8685, side = 3, [69] = {62.60, 31.00} },
+		{ quest = 8679, side = 3, [69] = {76.60, 37.80} },
+		{ quest = 8676, side = 3, [219] = {34.40, 39.60} },
+		{ quest = 8684, side = 3, [71] = {51.40, 28.80} },
+		{ quest = 8671, side = 3, [71] = {37.20, 79.00} },
+		{ quest = 8720, side = 3, [76] = {64.60, 79.20} },
+		{ quest = 8723, side = 3, [77] = {38.40, 52.80} },
+		{ quest = 8681, side = 3, [78] = {50.40, 76.20} },
+		{ quest = 8719, side = 3, [81] = {53.00, 35.40} },
+		{ quest = 8654, side = 3, [81] = {30.80, 13.40} },
+		{ quest = 8672, side = 3, [83] = {59.80, 49.80} },
+		{ quest = 8726, side = 3, [83] = {53.20, 56.60} },
+		{ quest = 8677, side = 3, [85] = {52.20, 59.80} },
+		{ quest = 8678, side = 3, [88] = {73.00, 23.80} },
+		{ quest = 8718, side = 3, [89] = {39.20, 32.00} },
+		{ quest = 29740, side = 3, [198] = {62.60, 22.80} },
+		{ quest = 29739, side = 3, [198] = {26.60, 62.00} },
+		{ quest = 8686, side = 3, [199] = {41.60, 47.40} },
+		{ quest = 29742, side = 3, [249] = {65.40, 18.60} },
+		{ quest = 29741, side = 3, [249] = {31.60, 63.00} },
+		{ quest = 13012, side = 3, [114] = {59.00, 65.60} },
+		{ quest = 13029, side = 3, [114] = {42.80, 49.60} },
+		{ quest = 13033, side = 3, [114] = {57.40, 43.60} },
+		{ quest = 13021, side = 3, [129] = {55.40, 64.80} },
+		{ quest = 13016, side = 3, [114] = {33.80, 34.20} },
+		{ quest = 13014, side = 3, [115] = {29.80, 55.80} },
+		{ quest = 13022, side = 3, [157] = {22.00, 44.00} },
+		{ quest = 13031, side = 3, [115] = {35.00, 48.40} },
+		{ quest = 13019, side = 3, [115] = {48.80, 78.00} },
+		{ quest = 13030, side = 3, [116] = {64.20, 47.00} },
+		{ quest = 13025, side = 3, [116] = {80.40, 37.00} },
+		{ quest = 13013, side = 3, [116] = {60.40, 27.60} },
+		{ quest = 13017, side = 3, [133] = {47.40, 70.00} },
+		{ quest = 13067, side = 3, [136] = {48.60, 22.20} },
+		{ quest = 13024, side = 3, [119] = {63.80, 49.00} },
+		{ quest = 13018, side = 3, [119] = {49.80, 63.60} },
+		{ quest = 13015, side = 3, [120] = {28.80, 73.60} },
+		{ quest = 13066, side = 3, [140] = {29.60, 61.60} },
+		{ quest = 13028, side = 3, [120] = {41.00, 84.60} },
+		{ quest = 13020, side = 3, [120] = {31.20, 37.60} },
+		{ quest = 13032, side = 3, [120] = {64.60, 51.20} },
+		{ quest = 13065, side = 3, [154] = {45.80, 62.00} },
+		{ quest = 13027, side = 3, [121] = {58.80, 56.00} },
+		{ quest = 13023, side = 3, [160] = {68.20, 78.80} },
+		{ quest = 13026, side = 3, [123] = {49.00, 14.00} },
+		{ quest = 8676, side = 3, extra = 2, [71] = {39.60, 21.10} },
+		{ quest = 8635, side = 3, extra = 2, [66] = {30.10, 62.70} },
+		{ quest = 8619, side = 3, extra = 2, [32] = {35.30, 85.20}, [36] = {20.50, 35.60} },
+		{ quest = 13017, side = 3, extra = 2, [117] = {59.00, 50.40} },
+		{ quest = 13022, side = 3, extra = 2, [115] = {26.80, 47.50} },
+		{ quest = 13065, side = 3, extra = 2, [121] = {78.40, 25.00} },
+		{ quest = 13067, side = 3, extra = 2, [117] = {57.90, 39.80} },
+		{ quest = 8713, side = 3, extra = 2, [51] = {69.60, 54.50} },
+		{ quest = 8644, side = 3, extra = 2, [32] = {35.30, 87.20}, [36] = {20.50, 37.60} },
+		{ quest = 8727, side = 3, extra = 2, [23] = {26.90, 14.90} },
+		{ quest = 13021, side = 3, extra = 2, [114] = {27.00, 28.70} },
+		{ quest = 13023, side = 3, extra = 2, [116] = {17.70, 25.60}, [121] = {28.20, 89.10} },
+		{ quest = 13066, side = 3, extra = 2, [120] = {37.50, 24.20} },
+	}
 }
