@@ -66,45 +66,42 @@ end
 do
 	local waypointAddons = {}
 
-	-- TODO: BfA waypoint support for TomTom and TomTomLite
-	--[=[
-
-	-- TomTom (v50400-1.0.0)
+	-- TomTom (v80001-1.0.2)
 	table.insert(waypointAddons, {
 		name = "TomTom",
 		func = function(self, poi, wholeModule)
-			-- TODO: wholeModule
-			-- TomTom:AddMFWaypoint()
-			-- TomTom:SetClosestWaypoint()
-			local uiMapID = poi:GetMap():GetMapID()
-			local x, y = poi:GetPosition()
-			local mapInfo = C_Map.GetMapInfo(uiMapID)
-			TomTom:AddMFWaypoint(uiMapID, x, y, {
-				title = string.format("%s (%s, %d)", poi.name, mapInfo.name or "Map " .. uiMapID, poi.quest.quest),
-				minimap = true,
-				crazy = true,
-			})
+			if wholeModule then
+				self:funcAll(poi.quest.module)
+				TomTom:SetClosestWaypoint()
+			else
+				local uiMapID = poi:GetMap():GetMapID()
+				local x, y = poi:GetPosition()
+				local mapInfo = C_Map.GetMapInfo(uiMapID)
+				TomTom:AddWaypoint(uiMapID, x, y, {
+					title = string.format("%s (%s, %d)", poi.name, mapInfo.name or "Map " .. uiMapID, poi.quest.quest),
+					minimap = true,
+					crazy = true,
+				})
+			end
 			return true
 		end,
-	})
-
-	-- TomTomLite (v50100-1.0.0)
-	table.insert(waypointAddons, {
-		name = "TomTomLite",
-		func = function(self, poi, wholeModule)
-			-- TODO: wholeModule
-			-- TomTomLite:AddWaypoint()
-			local uiMapID = poi:GetMap():GetMapID()
-			local x, y = poi:GetPosition()
-			local mapInfo = C_Map.GetMapInfo(uiMapID)
-			TomTomLite:AddWaypoint(uiMapID, x, y, {
-				title = string.format("%s (%s, %d)", poi.name, mapInfo.name or "Map " .. uiMapID, poi.quest.quest),
-			})
-			return true
+		funcAll = function(self, module)
+			for i = 1, #module.quests do
+				local quest = module.quests[i]
+				for uiMapID, coords in pairs(quest) do
+					if type(uiMapID) == "number" and type(coords) == "table" then
+						local name = module.title[quest.extra or 1]
+						local mapInfo = C_Map.GetMapInfo(uiMapID)
+						TomTom:AddWaypoint(uiMapID, coords[1]/100, coords[2]/100, {
+							title = string.format("%s (%s, %d)", name, mapInfo.name or "Map " .. uiMapID, quest.quest),
+							minimap = true,
+							crazy = true,
+						})
+					end
+				end
+			end
 		end,
 	})
-
-	--]=]
 
 	local supportedAddons = ""
 	local supportedAddonsWarned = false
