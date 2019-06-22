@@ -1,5 +1,3 @@
-if select(4, GetBuildInfo()) < 80000 then return end -- BfA required
-
 local addonName, ns = ...
 local DEBUG = false
 
@@ -88,18 +86,21 @@ do
 		funcAll = function(self, module)
 			for i = 1, #module.quests do
 				local quest = module.quests[i]
-				for uiMapID, coords in pairs(quest) do
-					if type(uiMapID) == "number" and type(coords) == "table" then
-						local name = module.title[quest.extra or 1]
-						local mapInfo = C_Map.GetMapInfo(uiMapID)
-						TomTom:AddWaypoint(uiMapID, coords[1]/100, coords[2]/100, {
-							title = string.format("%s (%s, %d)", name, mapInfo.name or "Map " .. uiMapID, quest.quest),
-							minimap = true,
-							crazy = true,
-						})
+				if (not quest.side or quest.side == 3 or quest.side == ns.FACTION) and not ns.COMPLETED_QUESTS[quest.quest] then
+					for uiMapID, coords in pairs(quest) do
+						if type(uiMapID) == "number" and type(coords) == "table" then
+							local name = module.title[quest.extra or 1]
+							local mapInfo = C_Map.GetMapInfo(uiMapID)
+							TomTom:AddWaypoint(uiMapID, coords[1]/100, coords[2]/100, {
+								title = string.format("%s (%s, %d)", name, mapInfo.name or "Map " .. uiMapID, quest.quest),
+								minimap = true,
+								crazy = true,
+							})
+						end
 					end
 				end
 			end
+			return true
 		end,
 	})
 
@@ -130,9 +131,9 @@ do
 			return false
 		end
 		local status, err = pcall(function() return waypoint:func(poi, wholeModule) end)
-		if not status or err then
+		if not status or err ~= true then
 			if not silent then
-				DEFAULT_CHAT_FRAME:AddMessage("Unable to set waypoint using " .. waypoint.name .. ": " .. err, 1, 1, 0)
+				DEFAULT_CHAT_FRAME:AddMessage("Unable to set waypoint using " .. waypoint.name .. (type(err) == "string" and ": " .. err or ""), 1, 1, 0)
 			end
 			return false
 		end
@@ -220,6 +221,13 @@ end
 -- Pin
 --
 
+local PIN_BORDER_COLOR = {
+	[0] = "Interface\\Buttons\\GREYSCALERAMP64",
+	[1] = "Interface\\Buttons\\BLUEGRAD64",
+	[2] = "Interface\\Buttons\\REDGRAD64",
+	[3] = "Interface\\Buttons\\YELLOWORANGE64",
+}
+
 CandyBucketsPinMixin = CreateFromMixins(MapCanvasPinMixin)
 
 function CandyBucketsPinMixin:OnLoad()
@@ -230,6 +238,8 @@ function CandyBucketsPinMixin:OnLoad()
 	self.Texture:SetMask("Interface\\CharacterFrame\\TempPortraitAlphaMask")
 	self.Texture:ClearAllPoints()
 	self.Texture:SetAllPoints()
+	self.Border:SetMask("Interface\\CharacterFrame\\TempPortraitAlphaMask")
+	self.Border:SetTexture(PIN_BORDER_COLOR[0])
 end
 
 function CandyBucketsPinMixin:OnAcquired(quest, poi)
@@ -237,6 +247,7 @@ function CandyBucketsPinMixin:OnAcquired(quest, poi)
 	self:UseFrameLevelType("PIN_FRAME_LEVEL_GOSSIP", self:GetMap():GetNumActivePinsByTemplate("CandyBucketsPinTemplate"))
 	self:SetSize(12, 12)
 	self.Texture:SetTexture(quest.module.texture[quest.extra or 1])
+	self.Border:SetTexture(PIN_BORDER_COLOR[quest.side or 0])
 	self.name = quest.module.title[quest.extra or 1]
 	if poi.GetXY then
 		self:SetPosition(poi:GetXY())
@@ -526,6 +537,10 @@ end
 
 function addon:QUEST_TURNED_IN(event, questID)
 	ns.COMPLETED_QUESTS[questID] = true
+
+	if DEBUG then
+		DEFAULT_CHAT_FRAME:AddMessage("|cffFFFFFF" .. addonName .. "|r quest |cffFFFFFF" .. questID .. "|r turned in", 1, 1, 0)
+	end
 
 	if addon:RemoveQuestPois(questID) then
 		addon:RefreshAllWorldMaps(true)
