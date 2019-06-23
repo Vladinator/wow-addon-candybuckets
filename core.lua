@@ -481,6 +481,7 @@ function addon:QueryCalendar(check)
 	addon:RegisterEvent("CALENDAR_UPDATE_EVENT_LIST")
 	addon:RegisterEvent("GUILD_ROSTER_UPDATE")
 	addon:RegisterEvent("PLAYER_GUILD_UPDATE")
+	addon:RegisterEvent("PLAYER_ENTERING_WORLD")
 
 	if type(CalendarFrame) ~= "table" or not CalendarFrame:IsShown() then
 		local curDate = C_Calendar.GetDate()
@@ -532,6 +533,10 @@ function addon:GUILD_ROSTER_UPDATE()
 end
 
 function addon:PLAYER_GUILD_UPDATE()
+	addon:CheckCalendar()
+end
+
+function addon:PLAYER_ENTERING_WORLD()
 	addon:CheckCalendar()
 end
 
