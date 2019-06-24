@@ -1,5 +1,11 @@
 local addonName, ns = ...
-local DEBUG = false
+
+--
+-- Debug
+--
+
+local DEBUG_MODULE = false
+local DEBUG_LOCATION = false
 
 --
 -- Session
@@ -55,6 +61,29 @@ do
 	end
 end
 
+local function GetLowestLevelMapFromMapID(uiMapID, x, y)
+	if not uiMapID or not x or not y then
+		return uiMapID, x, y
+	end
+
+	local child = C_Map.GetMapInfoAtPosition(uiMapID, x, y)
+	if not child or not child.mapID then
+		return uiMapID, x, y
+	end
+
+	local continentID, worldPos = C_Map.GetWorldPosFromMapPos(uiMapID, { x = x, y = y })
+	if not continentID or not worldPos then
+		return uiMapID, x, y
+	end
+
+	local _, mapPos = C_Map.GetMapPosFromWorldPos(continentID, worldPos, child.mapID)
+	if mapPos and mapPos.x and mapPos.y then
+		return child.mapID, mapPos.x, mapPos.y
+	end
+
+	return uiMapID, x, y
+end
+
 --
 -- Waypoint
 --
@@ -74,9 +103,10 @@ do
 			else
 				local uiMapID = poi:GetMap():GetMapID()
 				local x, y = poi:GetPosition()
-				local mapInfo = C_Map.GetMapInfo(uiMapID)
-				TomTom:AddWaypoint(uiMapID, x, y, {
-					title = string.format("%s (%s, %d)", poi.name, mapInfo.name or "Map " .. uiMapID, poi.quest.quest),
+				local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
+				local mapInfo = C_Map.GetMapInfo(childUiMapID)
+				TomTom:AddWaypoint(childUiMapID, childX, childY, {
+					title = string.format("%s (%s, %d)", poi.name, mapInfo.name or "Map " .. childUiMapID, poi.quest.quest),
 					minimap = true,
 					crazy = true,
 				})
@@ -84,9 +114,9 @@ do
 			return true
 		end,
 		funcAll = function(self, module)
-			for i = 1, #module.quests do
-				local quest = module.quests[i]
-				if (not quest.side or quest.side == 3 or quest.side == ns.FACTION) and not ns.COMPLETED_QUESTS[quest.quest] then
+			for i = 1, #ns.QUESTS do
+				local quest = ns.QUESTS[i]
+				if quest.module == module then
 					for uiMapID, coords in pairs(quest) do
 						if type(uiMapID) == "number" and type(coords) == "table" then
 							local name = module.title[quest.extra or 1]
@@ -254,16 +284,15 @@ function CandyBucketsPinMixin:OnAcquired(quest, poi)
 	else
 		self:SetPosition(poi[1]/100, poi[2]/100)
 	end
-	--[=[ -- TODO: show the local zone, not the zoomed out one
 	local uiMapID = self:GetMap():GetMapID()
 	if uiMapID then
 		local x, y = self:GetPosition()
-		local mapInfo = C_Map.GetMapInfo(uiMapID)
-		if x and y and mapInfo and mapInfo.name then
-			self.description = string.format("%s (%.2f, %.2f)", mapInfo.name, x, y)
+		local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
+		local mapInfo = C_Map.GetMapInfo(childUiMapID)
+		if mapInfo and mapInfo.name and childX and childY then
+			self.description = string.format("%s (%.2f, %.2f)", mapInfo.name, childX * 100, childY * 100)
 		end
 	end
-	--]=]
 end
 
 function CandyBucketsPinMixin:OnReleased()
@@ -441,7 +470,7 @@ function addon:CheckCalendar()
 		end
 	end
 
-	if DEBUG then
+	if DEBUG_MODULE then
 		for name, module in pairs(ns.modules) do
 			if addon:CanLoadModule(name) then
 				DEFAULT_CHAT_FRAME:AddMessage("|cffFFFFFF" .. addonName .. "|r has loaded the module for |cffFFFFFF[DEBUG] " .. name .. "|r!", 1, 1, 0)
@@ -479,6 +508,7 @@ end
 function addon:QueryCalendar(check)
 	addon:RegisterEvent("CALENDAR_UPDATE_EVENT")
 	addon:RegisterEvent("CALENDAR_UPDATE_EVENT_LIST")
+	addon:RegisterEvent("INITIAL_CLUBS_LOADED")
 	addon:RegisterEvent("GUILD_ROSTER_UPDATE")
 	addon:RegisterEvent("PLAYER_GUILD_UPDATE")
 	addon:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -491,6 +521,52 @@ function addon:QueryCalendar(check)
 	if check then
 		addon:CheckCalendar()
 	end
+end
+
+function addon:IsDeliveryLocationExpected(questID)
+	local quest
+
+	for i = 1, #ns.QUESTS do
+		quest = ns.QUESTS[i]
+		if quest.quest == questID then
+			break
+		end
+		quest = nil
+	end
+
+	if not quest then
+		return nil, DEBUG_LOCATION and { error = "Quest not part of any module." } or nil
+	end
+
+	local uiMapID = C_Map.GetBestMapForUnit("player")
+	if not uiMapID then
+		return nil, DEBUG_LOCATION and { error = "Player has no uiMapID." } or nil
+	end
+
+	local pos = C_Map.GetPlayerMapPosition(uiMapID, "player")
+	if not pos or not pos.x or not pos.y then
+		return nil, DEBUG_LOCATION and { error = "Player is on map " .. uiMapID .. " but not coordinates." } or nil
+	end
+
+	local qpos = quest[uiMapID]
+	if type(qpos) == "table" then
+		local dx = qpos[1]/100 - pos.x
+		local dy = qpos[2]/100 - pos.y
+
+		local dd = dx*dx + dy*dy
+		if dd < 0 then
+			return nil, DEBUG_LOCATION and { error = "Distance calculated is negative. Can't sqrt negative numbers." } or nil
+		end
+
+		local distance = sqrt(dd)
+		if distance > 0.02 then
+			return false, { quest = quest, uiMapID = uiMapID, x = pos.x, y = pos.y, distance = distance }
+		elseif DEBUG_LOCATION then
+			return true, { success = "Player turned in quest at an acceptable distance.", quest = quest, uiMapID = uiMapID, x = pos.x, y = pos.y, distance = distance }
+		end
+	end
+
+	return true, DEBUG_LOCATION and { warning = "Player is not on appropriate map for this quest and can't calculate distance." } or nil
 end
 
 --
@@ -528,6 +604,10 @@ function addon:CALENDAR_UPDATE_EVENT_LIST()
 	addon:CheckCalendar()
 end
 
+function addon:INITIAL_CLUBS_LOADED()
+	addon:CheckCalendar()
+end
+
 function addon:GUILD_ROSTER_UPDATE()
 	addon:CheckCalendar()
 end
@@ -543,8 +623,16 @@ end
 function addon:QUEST_TURNED_IN(event, questID)
 	ns.COMPLETED_QUESTS[questID] = true
 
-	if DEBUG then
-		DEFAULT_CHAT_FRAME:AddMessage("|cffFFFFFF" .. addonName .. "|r quest |cffFFFFFF" .. questID .. "|r turned in", 1, 1, 0)
+	local success, info = addon:IsDeliveryLocationExpected(questID)
+	if DEBUG_LOCATION then
+		DEFAULT_CHAT_FRAME:AddMessage("|cffFFFFFF" .. addonName .. "|r quest |cffFFFFFF" .. questID .. "|r turned in" .. (info and ":" or "."), 1, 1, 0)
+		if info then
+			for k, v in pairs(info) do
+				DEFAULT_CHAT_FRAME:AddMessage("|cffFFFFFF" .. tostring(k) .. "|r = |cffFFFFFF" .. tostring(v) .. "|r", 1, 1, 0)
+			end
+		end
+	elseif success == false then
+		DEFAULT_CHAT_FRAME:AddMessage(format("|cffFFFFFF%s|r quest |cffFFFFFF%s#%d|r turned in at the wrong location. You were at |cffFFFFFF%d/%d/%.2f/%.2f|r roughly |cffFFFFFF%.2f|r units away from the expected location. Please screenshot/copy this message and report it to the author. Thanks!", addonName, info.quest.module.event, questID, ns.FACTION, info.uiMapID, info.x * 100, info.y * 100, info.distance * 100), 1, 1, 0)
 	end
 
 	if addon:RemoveQuestPois(questID) then
