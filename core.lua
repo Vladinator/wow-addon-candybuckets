@@ -84,6 +84,22 @@ local function GetLowestLevelMapFromMapID(uiMapID, x, y)
 	return uiMapID, x, y
 end
 
+local function GetPlayerMapAndPosition()
+	local unit = "player"
+
+	local uiMapID = C_Map.GetBestMapForUnit(unit)
+	if not uiMapID then
+		return
+	end
+
+	local pos = C_Map.GetPlayerMapPosition(uiMapID, unit)
+	if not pos or not pos.x or not pos.y then
+		return uiMapID -- TODO: instance support return 0,0?
+	end
+
+	return uiMapID, pos
+end
+
 --
 -- Waypoint
 --
@@ -535,30 +551,62 @@ function addon:IsDeliveryLocationExpected(questID)
 	end
 
 	if not quest then
+		local questName = C_QuestLog.GetQuestInfo(questID)
+
+		if questName then
+			local missingFromModule
+
+			for name, module in pairs(ns.modules) do
+				if module.loaded == true then
+					for _, pattern in pairs(module.patterns) do
+						if questName:match(pattern) then
+							missingFromModule = module
+							break
+						end
+					end
+					if missingFromModule then
+						break
+					end
+				end
+			end
+
+			if missingFromModule then
+				quest = { missing = true, module = missingFromModule, quest = questID, side = 3 }
+			end
+		end
+	end
+
+	if not quest then
 		return nil, DEBUG_LOCATION and { error = "Quest not part of any module." } or nil
 	end
 
-	local uiMapID = C_Map.GetBestMapForUnit("player")
+	local uiMapID, pos = GetPlayerMapAndPosition()
 	if not uiMapID then
 		return nil, DEBUG_LOCATION and { error = "Player has no uiMapID." } or nil
+	elseif not pos then
+		return nil, DEBUG_LOCATION and { error = "Player is on map " .. uiMapID .. " but not coordinates." } or nil
 	end
 
-	local pos = C_Map.GetPlayerMapPosition(uiMapID, "player")
-	if not pos or not pos.x or not pos.y then
-		return nil, DEBUG_LOCATION and { error = "Player is on map " .. uiMapID .. " but not coordinates." } or nil
+	if quest.missing then
+		quest[uiMapID] = { pos.x * 100, pos.y * 100 }
 	end
 
 	local qpos = quest[uiMapID]
 	if type(qpos) == "table" then
-		local dx = qpos[1]/100 - pos.x
-		local dy = qpos[2]/100 - pos.y
+		local distance = quest.missing and 1 or 0
 
-		local dd = dx*dx + dy*dy
-		if dd < 0 then
-			return nil, DEBUG_LOCATION and { error = "Distance calculated is negative. Can't sqrt negative numbers." } or nil
+		if not quest.missing then
+			local dx = qpos[1]/100 - pos.x
+			local dy = qpos[2]/100 - pos.y
+
+			local dd = dx*dx + dy*dy
+			if dd < 0 then
+				return nil, DEBUG_LOCATION and { error = "Distance calculated is negative. Can't sqrt negative numbers." } or nil
+			end
+
+			distance = sqrt(dd)
 		end
 
-		local distance = sqrt(dd)
 		if distance > 0.02 then
 			return false, { quest = quest, uiMapID = uiMapID, x = pos.x, y = pos.y, distance = distance }
 		elseif DEBUG_LOCATION then

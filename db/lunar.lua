@@ -110,5 +110,14 @@ ns.modules["lunar"] = {
 		{ quest = 13021, side = 3, extra = 2, [114] = {27.00, 28.70} },
 		{ quest = 13023, side = 3, extra = 2, [116] = {17.70, 25.60}, [121] = {28.20, 89.10} },
 		{ quest = 13066, side = 3, extra = 2, [120] = {37.50, 24.20} },
+	},
+	patterns = {
+		"%s+[Tt][Hh][Ee]%s+[Ee][Ll][Dd][Ee][Rr]%s*$",
+		"^%s*[Uu][Rr][Aa][Hh][Nn][Ee]%s+",
+		"%s+[Ee][Ll]%s+[Aa][Nn][Cc][Ee][Ss][Tt][Rr][Oo]%s*$",
+		"^%s*[Ll]'[Aa][Nn][Cc][Ii][Ee][Nn]%s+",
+		"%s+[Ll]'[Aa][Nn][Zz][Ii][Aa][Nn][oO]%s*$",
+		",%s+[Oo]%s+[Aa][Nn][Cc][Ii][Ãã][Oo]%s*$",
+		"^%s*[Пп][Рр][Ее][Дд][Оо][Кк]%s+",
 	}
 }

@@ -225,5 +225,18 @@ ns.modules["hallow"] = {
 		{ quest = 43057, side = 2, [627] = {66.80, 30.00} },
 		{ quest = 12409, side = 3, extra = 3, [104] = {61.00, 28.20} },
 		{ quest = 12404, side = 3, extra = 3, [111] = {28.10, 49.00} },
+	},
+	patterns = {
+		"^%s*[Cc][Aa][Nn][Dd][Yy]%s+[Bb][Uu][Cc][Kk][Ee][Tt]%s*$",
+		"^%s*[Ee][Ii][Mm][Ee][Rr]%s+[Mm][Ii][Tt]%s+[Ss][Üü][ßß][Ii][Gg][Kk][Ee][Ii][Tt][Ee][Nn]%s*$",
+		"^%s*[Cc][Uu][Bb][Oo]%s+[Dd][Ee]%s+[Cc][Aa][Rr][Aa][Mm][Ee][Ll][Oo][Ss]%s*$",
+		"^%s*[Uu][Nn]%s+[Ss][Ee][Aa][Uu]%s+[Dd][Ee]%s+[Bb][Oo][Nn][Bb][Oo][Nn][Ss]%s*$",
+		"^%s*[Ss][Ee][Aa][Uu]%s+[Dd][Ee]%s+[Bb][Oo][Nn][Bb][Oo][Nn][Ss]%s*$",
+		"^%s*[Ss][Ee][Cc][Cc][Hh][Ii][Oo]%s+[Dd][Ee][Ll][Ll][Ee]%s+[Cc][Aa][Rr][Aa][Mm][Ee][Ll][Ll][Ee]%s*$",
+		"^%s*[Bb][Aa][Ll][Dd][Ee]%s+[Dd][Ee]%s+[Dd][Oo][Cc][Ee][Ss]%s*$",
+		"^%s*[Кк][Уу][Лл][Ее][Кк]%s+[Кк][Оо][Нн][Фф][Ее][Тт]%s*$",
+		"^%s*사탕%s+바구니%s*$",
+		"^%s*糖罐%s*$",
+		"^%s*%[%s*[Cc][Aa][Nn][Dd][Yy]%s+[Bb][Uu][Cc][Kk][Ee][Tt]%s*%]%s*$",
 	}
 }
