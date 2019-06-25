@@ -94,7 +94,7 @@ local function GetPlayerMapAndPosition()
 
 	local pos = C_Map.GetPlayerMapPosition(uiMapID, unit)
 	if not pos or not pos.x or not pos.y then
-		return uiMapID -- TODO: instance support return 0,0?
+		return uiMapID, IsInInstance() ~= "none" and { x = 10, y = 10 } or nil
 	end
 
 	return uiMapID, pos
@@ -231,7 +231,7 @@ function CandyBucketsDataProviderMixin:RefreshAllData(fromOnShow)
 						poi = poi[translateKey]
 
 					else
-						local continentID, worldPos = C_Map.GetWorldPosFromMapPos(childUiMapID, CreateVector2D(poi[1]/100, poi[2]/100))
+						local continentID, worldPos = C_Map.GetWorldPosFromMapPos(childUiMapID, CreateVector2D(poi[1]/100, poi[2]/100)) -- TODO: replace with a table and xy properties?
 						poi, poi2 = nil, poi
 
 						if continentID and worldPos then
@@ -522,6 +522,14 @@ function addon:CheckCalendar()
 end
 
 function addon:QueryCalendar(check)
+	local function DelayedUpdate()
+		if type(CalendarFrame) ~= "table" or not CalendarFrame:IsShown() then
+			local curDate = C_Calendar.GetDate()
+			C_Calendar.SetAbsMonth(curDate.month, curDate.year)
+			C_Calendar.OpenCalendar()
+		end
+	end
+
 	addon:RegisterEvent("CALENDAR_UPDATE_EVENT")
 	addon:RegisterEvent("CALENDAR_UPDATE_EVENT_LIST")
 	addon:RegisterEvent("INITIAL_CLUBS_LOADED")
@@ -529,10 +537,8 @@ function addon:QueryCalendar(check)
 	addon:RegisterEvent("PLAYER_GUILD_UPDATE")
 	addon:RegisterEvent("PLAYER_ENTERING_WORLD")
 
-	if type(CalendarFrame) ~= "table" or not CalendarFrame:IsShown() then
-		local curDate = C_Calendar.GetDate()
-		C_Calendar.SetAbsMonth(curDate.month, curDate.year)
-	end
+	DelayedUpdate()
+	C_Timer.After(10, DelayedUpdate)
 
 	if check then
 		addon:CheckCalendar()
@@ -541,6 +547,7 @@ end
 
 function addon:IsDeliveryLocationExpected(questID)
 	local quest
+	local questName
 
 	for i = 1, #ns.QUESTS do
 		quest = ns.QUESTS[i]
@@ -551,7 +558,7 @@ function addon:IsDeliveryLocationExpected(questID)
 	end
 
 	if not quest then
-		local questName = C_QuestLog.GetQuestInfo(questID)
+		questName = C_QuestLog.GetQuestInfo(questID)
 
 		if questName then
 			local missingFromModule
@@ -577,7 +584,7 @@ function addon:IsDeliveryLocationExpected(questID)
 	end
 
 	if not quest then
-		return nil, DEBUG_LOCATION and { error = "Quest not part of any module." } or nil
+		return nil, DEBUG_LOCATION and { error = "Quest not part of any module.", name = questName } or nil
 	end
 
 	local uiMapID, pos = GetPlayerMapAndPosition()
@@ -612,6 +619,9 @@ function addon:IsDeliveryLocationExpected(questID)
 		elseif DEBUG_LOCATION then
 			return true, { success = "Player turned in quest at an acceptable distance.", quest = quest, uiMapID = uiMapID, x = pos.x, y = pos.y, distance = distance }
 		end
+
+	elseif not quest.missing then
+		return false, { quest = quest, uiMapID = uiMapID, x = pos.x, y = pos.y, distance = 1 }
 	end
 
 	return true, DEBUG_LOCATION and { warning = "Player is not on appropriate map for this quest and can't calculate distance." } or nil
