@@ -685,8 +685,23 @@ function addon:QUEST_TURNED_IN(event, questID)
 	if DEBUG_LOCATION then
 		DEFAULT_CHAT_FRAME:AddMessage("|cffFFFFFF" .. addonName .. "|r quest |cffFFFFFF" .. questID .. "|r turned in" .. (info and ":" or "."), 1, 1, 0)
 		if info then
-			for k, v in pairs(info) do
-				DEFAULT_CHAT_FRAME:AddMessage("|cffFFFFFF" .. tostring(k) .. "|r = |cffFFFFFF" .. tostring(v) .. "|r", 1, 1, 0)
+			if info.error then
+				DEFAULT_CHAT_FRAME:AddMessage("|cffFF0000Error!|r |cffFFFFFF" .. tostring(info.error) .. "|r", 1, 1, 0)
+			end
+			if info.warning then
+				DEFAULT_CHAT_FRAME:AddMessage("|cffFFFF00Warning!|r |cffFFFFFF" .. tostring(info.warning) .. "|r", 1, 1, 0)
+			end
+			if info.success then
+				DEFAULT_CHAT_FRAME:AddMessage("|cff00FF00Success!|r |cffFFFFFF" .. tostring(info.success) .. "|r", 1, 1, 0)
+			end
+			if info.name then
+				DEFAULT_CHAT_FRAME:AddMessage("|cff00FF00Quest|r: |cffFFFFFF" .. tostring(info.name) .. "|r", 1, 1, 0)
+			end
+			if info.distance then
+				DEFAULT_CHAT_FRAME:AddMessage("|cff00FF00Distance|r: |cffFFFFFF" .. tostring(info.distance) .. "|r", 1, 1, 0)
+			end
+			if info.x and info.y then
+				DEFAULT_CHAT_FRAME:AddMessage(format("|cffFFFFFFmxy|r = |cffFFFFFF%s|r @ |cffFFFFFF%.2f|r, |cffFFFFFF%.2f|r", info.uiMapID and tostring(info.uiMapID) or "?", info.x * 100, info.y * 100), 1, 1, 0)
 			end
 		end
 	elseif success == false then
