@@ -4,3 +4,5 @@ tools-used:
 		- callbackhandler
 		- herebedragons
 		- libstub
+ignore:
+  - .travis.yml
