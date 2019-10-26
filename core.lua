@@ -40,15 +40,20 @@ do
 		13, -- Eastern Kingdoms
 		101, -- Outland
 		113, -- Northrend
+		127, -- Crystalsong Forest
 		203, -- Vashj'ir
 		224, -- Stranglethorn Vale
+		390, -- Vale of Eternal Blossoms
 		424, -- Pandaria
 		572, -- Draenor
 		619, -- Broken Isles
+		862, -- Zuldazar
 		875, -- Zandalar
 		876, -- Kul Tiras
+		895, -- Tiragarde Sound
+		947, -- Azeroth (CPU hog, but it's not too bad?)
 		948, -- The Maelstrom
-		-- 947, -- Azeroth (hogs CPU but is kind of neat, though not complete as we only check the direct children of these maps...)
+		1165, -- Dazar'alor
 	}
 
 	for i = 1, #parentMapIDs do
@@ -550,18 +555,17 @@ function addon:QueryCalendar(check)
 end
 
 function addon:IsDeliveryLocationExpected(questID)
-	local quest
+	local questCollection = {}
 	local questName
 
 	for i = 1, #ns.QUESTS do
-		quest = ns.QUESTS[i]
+		local quest = ns.QUESTS[i]
 		if quest.quest == questID then
-			break
+			table.insert(questCollection, quest)
 		end
-		quest = nil
 	end
 
-	if not quest then
+	if not questCollection[1] then
 		questName = C_QuestLog.GetQuestInfo(questID)
 
 		if questName then
@@ -582,53 +586,85 @@ function addon:IsDeliveryLocationExpected(questID)
 			end
 
 			if missingFromModule then
-				quest = { missing = true, module = missingFromModule, quest = questID, side = 3 }
+				table.insert(questCollection, { missing = true, module = missingFromModule, quest = questID, side = 3 })
 			end
 		end
 	end
 
-	if not quest then
-		return nil, DEBUG_LOCATION and { error = "Quest not part of any module.", name = questName } or nil
+	if not questCollection[1] then
+		return nil, DEBUG_LOCATION and { error = "Quest not part of any module.", name = questName } or nil, nil
 	end
 
 	local uiMapID, pos = GetPlayerMapAndPosition()
 	if not uiMapID then
-		return nil, DEBUG_LOCATION and { error = "Player has no uiMapID." } or nil
+		return nil, DEBUG_LOCATION and { error = "Player has no uiMapID." } or nil, nil
 	elseif not pos then
-		return nil, DEBUG_LOCATION and { error = "Player is on map " .. uiMapID .. " but not coordinates." } or nil
+		return nil, DEBUG_LOCATION and { error = "Player is on map " .. uiMapID .. " but not coordinates." } or nil, nil
 	end
 
-	if quest.missing then
-		quest[uiMapID] = { pos.x * 100, pos.y * 100 }
+	if questCollection[1].missing then
+		for i = 1, #questCollection do
+			questCollection[i][uiMapID] = { pos.x * 100, pos.y * 100 }
+		end
 	end
 
-	local qpos = quest[uiMapID]
-	if type(qpos) == "table" then
-		local distance = quest.missing and 1 or 0
+	local returnCount = 0
+	local returns = {}
 
-		if not quest.missing then
-			local dx = qpos[1]/100 - pos.x
-			local dy = qpos[2]/100 - pos.y
+	for i = 1, #questCollection do
+		local quest = questCollection[i]
+		local qpos = quest[uiMapID]
 
-			local dd = dx*dx + dy*dy
-			if dd < 0 then
-				return nil, DEBUG_LOCATION and { error = "Distance calculated is negative. Can't sqrt negative numbers." } or nil
+		local ret = {}
+		returnCount = returnCount + 1
+		returns[returnCount] = ret
+
+		repeat
+			if type(qpos) == "table" then
+				local distance = quest.missing and 1 or 0
+		
+				if not quest.missing then
+					local dx = qpos[1]/100 - pos.x
+					local dy = qpos[2]/100 - pos.y
+		
+					local dd = dx*dx + dy*dy
+					if dd < 0 then
+						ret.has, ret.success, ret.data = true, nil, DEBUG_LOCATION and { error = "Distance calculated is negative. Can't sqrt negative numbers." } or nil
+						break
+					end
+		
+					distance = sqrt(dd)
+				end
+		
+				if distance > 0.02 then
+					ret.has, ret.success, ret.data = true, false, { quest = quest, uiMapID = uiMapID, x = pos.x, y = pos.y, distance = distance }
+				elseif DEBUG_LOCATION then
+					ret.has, ret.success, ret.data = true, true, { success = "Player turned in quest at an acceptable distance.", quest = quest, uiMapID = uiMapID, x = pos.x, y = pos.y, distance = distance }
+				else
+					ret.has, ret.success = true, true
+				end
+		
+			elseif not quest.missing then
+				ret.has, ret.success, ret.data = true, false, { quest = quest, uiMapID = uiMapID, x = pos.x, y = pos.y, distance = 1 }
 			end
-
-			distance = sqrt(dd)
-		end
-
-		if distance > 0.02 then
-			return false, { quest = quest, uiMapID = uiMapID, x = pos.x, y = pos.y, distance = distance }
-		elseif DEBUG_LOCATION then
-			return true, { success = "Player turned in quest at an acceptable distance.", quest = quest, uiMapID = uiMapID, x = pos.x, y = pos.y, distance = distance }
-		end
-
-	elseif not quest.missing then
-		return false, { quest = quest, uiMapID = uiMapID, x = pos.x, y = pos.y, distance = 1 }
+		until true
 	end
 
-	return true, DEBUG_LOCATION and { warning = "Player is not on appropriate map for this quest and can't calculate distance." } or nil
+	for i = 1, returnCount do
+		local ret = returns[i]
+		if ret.has and ret.success then
+			return ret.success, ret.data, returnCount
+		end
+	end
+
+	for i = 1, returnCount do
+		local ret = returns[i]
+		if ret.has then
+			return ret.success, ret.data, returnCount
+		end
+	end
+
+	return true, DEBUG_LOCATION and { warning = "Player is not on appropriate map for this quest and can't calculate distance." } or nil, returnCount
 end
 
 --
@@ -685,7 +721,7 @@ end
 function addon:QUEST_TURNED_IN(event, questID)
 	ns.COMPLETED_QUESTS[questID] = true
 
-	local success, info = addon:IsDeliveryLocationExpected(questID)
+	local success, info, checkedNumQuestPOIs = addon:IsDeliveryLocationExpected(questID)
 	if DEBUG_LOCATION then
 		DEFAULT_CHAT_FRAME:AddMessage("|cffFFFFFF" .. addonName .. "|r quest |cffFFFFFF" .. questID .. "|r turned in" .. (info and ":" or "."), 1, 1, 0)
 		if info then
@@ -709,7 +745,7 @@ function addon:QUEST_TURNED_IN(event, questID)
 			end
 		end
 	elseif success == false then
-		DEFAULT_CHAT_FRAME:AddMessage(format("|cffFFFFFF%s|r quest |cffFFFFFF%s#%d|r turned in at the wrong location. You were at |cffFFFFFF%d/%d/%.2f/%.2f|r roughly |cffFFFFFF%.2f|r units away from the expected location. Please screenshot/copy this message and report it to the author. Thanks!", addonName, info.quest.module.event, questID, ns.FACTION, info.uiMapID, info.x * 100, info.y * 100, info.distance * 100), 1, 1, 0)
+		DEFAULT_CHAT_FRAME:AddMessage(format("|cffFFFFFF%s|r quest |cffFFFFFF%s#%d|r turned in at the wrong location. You were at |cffFFFFFF%d/%d/%.2f/%.2f|r roughly |cffFFFFFF%.2f|r units away from the expected %s. Please screenshot/copy this message and report it to the author. Thanks!", addonName, info.quest.module.event, questID, ns.FACTION, info.uiMapID, info.x * 100, info.y * 100, info.distance * 100, checkedNumQuestPOIs and checkedNumQuestPOIs > 1 and checkedNumQuestPOIs .. " locations" or "location"), 1, 1, 0)
 	end
 
 	if addon:RemoveQuestPois(questID) then
