@@ -103,7 +103,7 @@ local function GetPlayerMapAndPosition()
 
 	local pos = C_Map.GetPlayerMapPosition(uiMapID, unit)
 	if not pos or not pos.x or not pos.y then
-		return uiMapID, IsInInstance() ~= "none" and { x = 10, y = 10 } or nil
+		return uiMapID
 	end
 
 	return uiMapID, pos
@@ -478,6 +478,11 @@ function addon:CheckCalendar()
 				ongoing = curHour >= event.startTime.hour and (curHour > event.startTime.hour or curMinute >= event.startTime.minute)
 			elseif event.sequenceType == "END" then
 				ongoing = curHour <= event.endTime.hour and (curHour < event.endTime.hour or curMinute <= event.endTime.minute)
+				-- TODO: linger for 3 hours extra just in case event is active but not in the calendar
+				if not ongoing then
+					local paddingHour = max(0, curHour - 3)
+					ongoing = paddingHour <= event.endTime.hour and (paddingHour < event.endTime.hour or curMinute <= event.endTime.minute)
+				end
 			end
 
 			if ongoing and addon:CanLoadModule(moduleName) then
