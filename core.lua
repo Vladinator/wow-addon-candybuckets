@@ -9,6 +9,7 @@ local addonName, ns = ...
 --
 
 local DEBUG_MODULE = false
+local DEBUG_FACTION = false
 local DEBUG_LOCATION = false
 
 --
@@ -62,7 +63,7 @@ do
 
 		for _, child in pairs(children) do
 			if not ns.PARENT_MAP[uiMapID] then
-				ns.PARENT_MAP[uiMapID] = {}
+				ns.PARENT_MAP[uiMapID] = { [uiMapID] = true }
 			end
 
 			ns.PARENT_MAP[uiMapID][child.mapID] = true
@@ -213,14 +214,22 @@ function CandyBucketsDataProviderMixin:OnEvent(event, ...)
 end
 
 function CandyBucketsDataProviderMixin:RemoveAllData()
-	self:GetMap():RemoveAllPinsByTemplate("CandyBucketsPinTemplate")
+	local map = self:GetMap()
+	map:RemoveAllPinsByTemplate("CandyBucketsPinTemplate")
+	map:RemoveAllPinsByTemplate("CandyBucketsStatsTemplate")
 end
 
 function CandyBucketsDataProviderMixin:RefreshAllData(fromOnShow)
 	self:RemoveAllData()
 
-	local uiMapID = self:GetMap():GetMapID()
+	local map = self:GetMap()
+	local uiMapID = map:GetMapID()
 	local childUiMapIDs = ns.PARENT_MAP[uiMapID]
+	local questPOIs
+
+	if IsModifierKeyDown() then
+		questPOIs = {}
+	end
 
 	for i = 1, #ns.QUESTS do
 		local quest = ns.QUESTS[i]
@@ -263,12 +272,15 @@ function CandyBucketsDataProviderMixin:RefreshAllData(fromOnShow)
 		end
 
 		if poi then
-			self:GetMap():AcquirePin("CandyBucketsPinTemplate", quest, poi)
+			map:AcquirePin("CandyBucketsPinTemplate", quest, poi)
+			if questPOIs then
+				questPOIs[quest] = poi
+			end
 		end
 	end
 
-	if uiMapID == 947 then
-		-- TODO: Azeroth map overlay of sorts with statistics per continent?
+	if questPOIs and next(questPOIs) then
+		map:AcquirePin("CandyBucketsStatsTemplate", questPOIs)
 	end
 end
 
@@ -350,6 +362,81 @@ function CandyBucketsPinMixin:OnClick(button)
 end
 
 --
+-- Stats
+--
+
+CandyBucketsStatsMixin = CreateFromMixins(MapCanvasPinMixin)
+
+function CandyBucketsStatsMixin:OnLoad()
+	self:SetScalingLimits(1, 1.0, 1.2)
+	self.HighlightTexture:Hide()
+	self.hasTooltip = false
+	self:EnableMouse(self.hasTooltip)
+	self.Texture:Hide()
+end
+
+function CandyBucketsStatsMixin:OnAcquired(questPOIs)
+	local map = self:GetMap()
+	self:UseFrameLevelType("PIN_FRAME_LEVEL_GOSSIP", map:GetNumActivePinsByTemplate("CandyBucketsStatsTemplate"))
+	self:SetSize(map:GetSize())
+	self:SetPosition(.5, .5)
+	--self:ClearAllPoints()
+	--self:SetPoint("TOPLEFT", map:GetCanvasContainer(), "TOPLEFT", 0, 0)
+	self.name = nil
+	self.description = nil
+	local text
+	local i = 0
+	local uiMapID = map:GetMapID()
+	if uiMapID then
+		text = {}
+		for quest, poi in pairs(questPOIs) do
+			local x, y
+			if poi.GetXY then
+				x, y = poi:GetXY()
+			else
+				x, y = poi[1]/100, poi[2]/100
+			end
+			local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
+			local mapInfo = C_Map.GetMapInfo(childUiMapID)
+			i = i + 1
+			if mapInfo and mapInfo.name then
+				text[i] = string.format("%s (%.2f, %.2f)", mapInfo.name, childX * 100, childY * 100)
+			else
+				text[i] = string.format("#%d", quest.quest)
+			end
+		end
+		table.sort(text)
+		text = table.concat(text, "\r\n")
+	end
+	self.Text:SetText(text)
+end
+
+function CandyBucketsStatsMixin:OnReleased()
+	self.name, self.description = nil -- TODO: ?
+end
+
+function CandyBucketsStatsMixin:OnMouseEnter()
+	if not self.hasTooltip then return end
+	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+	self.UpdateTooltip = self.OnMouseEnter
+	GameTooltip_SetTitle(GameTooltip, self.name)
+	if self.description and self.description ~= "" then
+		GameTooltip_AddNormalLine(GameTooltip, self.description, true)
+	end
+	GameTooltip:Show()
+end
+
+function CandyBucketsStatsMixin:OnMouseLeave()
+	if not self.hasTooltip then return end
+	GameTooltip:Hide()
+end
+
+function CandyBucketsStatsMixin:OnClick(button)
+	if button ~= "LeftButton" then return end
+	-- TODO: ?
+end
+
+--
 -- Modules
 --
 
@@ -428,7 +515,7 @@ function addon:LoadModule(name)
 	for j = 1, #module.quests do
 		local quest = module.quests[j]
 
-		if (not quest.side or quest.side == 3 or quest.side == ns.FACTION) and not ns.COMPLETED_QUESTS[quest.quest] then
+		if (not quest.side or quest.side == 3 or quest.side == ns.FACTION or DEBUG_FACTION) and not ns.COMPLETED_QUESTS[quest.quest] then
 			quest.module = module
 			i = i + 1
 			ns.QUESTS[i] = quest

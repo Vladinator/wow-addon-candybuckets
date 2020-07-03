@@ -12,4 +12,17 @@
 			</Layer>
 		</Layers>
 	</Frame>
+	<Frame name="CandyBucketsStatsTemplate" inherits="BaseHighlightableMapPoiPinTemplate" enableMouseClicks="true" mixin="CandyBucketsStatsMixin" virtual="true">
+		<Layers>
+			<Layer level="BORDER">
+				<FontString parentKey="Text" inherits="SystemFont_Shadow_Med2" setAllPoints="true" justifyH="CENTER" justifyV="MIDDLE">
+					<Anchors>
+						<Anchor point="TOPLEFT" x="-1" y="1" />
+						<Anchor point="BOTTOMRIGHT" x="1" y="-1" />
+					</Anchors>
+					<Color r="1.0" g="0.82" b="0" />
+				</FontString>
+			</Layer>
+		</Layers>
+	</Frame>
 </Ui>
