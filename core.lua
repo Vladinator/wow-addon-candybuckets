@@ -782,7 +782,14 @@ function addon:PLAYER_LOGIN(event)
 		ns.FACTION = 3
 	end
 
-	GetQuestsCompleted(ns.COMPLETED_QUESTS)
+	if GetQuestsCompleted then
+		GetQuestsCompleted(ns.COMPLETED_QUESTS)
+	else
+		for _, id in ipairs(C_QuestLog.GetAllCompletedQuestIDs()) do
+			ns.COMPLETED_QUESTS[id] = true
+		end
+	end
+
 	addon:QueryCalendar(true)
 end
 
