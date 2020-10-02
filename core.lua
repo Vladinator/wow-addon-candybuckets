@@ -2,6 +2,8 @@ if WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE then
 	return
 end
 
+local C_Calendar_GetDate = C_Calendar.GetDate or C_DateAndTime.GetCurrentCalendarTime -- TODO: 9.0
+
 local addonName, ns = ...
 
 --
@@ -542,7 +544,7 @@ end
 
 function addon:CheckCalendar()
 	local curHour, curMinute = GetGameTime()
-	local curDate = C_Calendar.GetDate()
+	local curDate = C_Calendar_GetDate()
 	local calDate = C_Calendar.GetMonthInfo()
 	local month, day, year = calDate.month, curDate.monthDay, calDate.year
 	local curMonth, curYear = curDate.month, curDate.year
@@ -625,7 +627,7 @@ end
 function addon:QueryCalendar(check)
 	local function DelayedUpdate()
 		if type(CalendarFrame) ~= "table" or not CalendarFrame:IsShown() then
-			local curDate = C_Calendar.GetDate()
+			local curDate = C_Calendar_GetDate()
 			C_Calendar.SetAbsMonth(curDate.month, curDate.year)
 			C_Calendar.OpenCalendar()
 		end
