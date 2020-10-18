@@ -658,7 +658,7 @@ function addon:IsDeliveryLocationExpected(questID)
 	end
 
 	if not questCollection[1] then
-		questName = C_QuestLog.GetQuestInfo(questID)
+		questName = C_QuestLog.GetTitleForQuestID(questID)
 
 		if questName then
 			local missingFromModule
