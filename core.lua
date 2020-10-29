@@ -432,12 +432,14 @@ function CandyBucketsStatsMixin:OnAcquired(questPOIs)
 				x, y = poi[1]/100, poi[2]/100
 			end
 			local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
-			local mapInfo = C_Map.GetMapInfo(childUiMapID)
-			i = i + 1
-			if mapInfo and mapInfo.name then
-				text[i] = string.format("%s (%.2f, %.2f)", mapInfo.name, childX * 100, childY * 100)
-			else
-				text[i] = string.format("#%d", quest.quest)
+			if childX > 0 and childX < 1 and childY > 0 and childY < 1 then
+				local mapInfo = C_Map.GetMapInfo(childUiMapID)
+				i = i + 1
+				if mapInfo and mapInfo.name then
+					text[i] = string.format("%s (%.2f, %.2f)", mapInfo.name, childX * 100, childY * 100)
+				else
+					text[i] = string.format("#%d", quest.quest)
+				end
 			end
 		end
 		table.sort(text)
