@@ -36,7 +36,46 @@ ns.COMPLETED_QUESTS = setmetatable({}, {
 
 ns.PARENT_MAP = {}
 do
-	local parentMapIDs = {
+
+	local function AddParentChildMapIDs(uiParentMapID, uiChildMapID)
+		if not ns.PARENT_MAP[uiParentMapID] then
+			ns.PARENT_MAP[uiParentMapID] = { [uiParentMapID] = true }
+		end
+		ns.PARENT_MAP[uiParentMapID][uiChildMapID] = true
+	end
+
+	local function CheckMapRecursively(uiMapID, getChildren, depthRemaining, uiParentMapIDs)
+		if not uiMapID or not getChildren then return end
+		if not depthRemaining then depthRemaining = 1 end
+		if depthRemaining < 1 then return end
+		if not uiParentMapIDs then uiParentMapIDs = {} end
+		for uiParentMapID, _ in pairs(uiParentMapIDs) do
+			AddParentChildMapIDs(uiParentMapID, uiMapID)
+		end
+		uiParentMapIDs[uiMapID] = true
+		local children = getChildren(uiMapID)
+		if children and type(children) == "table" then
+			for _, uiChildMapID in pairs(children) do
+				if type(uiChildMapID) == "table" then
+					uiChildMapID = uiChildMapID.mapID
+				end
+				if type(uiChildMapID) == "number" then
+					AddParentChildMapIDs(uiMapID, uiChildMapID)
+					CheckMapRecursively(uiChildMapID, getChildren, depthRemaining - 1, uiParentMapIDs)
+				end
+			end
+		end
+	end
+
+	local function GetChildren(uiMapID)
+		return C_Map.GetMapChildrenInfo(uiMapID, nil, true) -- Enum.UIMapType.Zone
+	end
+
+	local function GetChildrenNS(uiMapID)
+		return ns.uimaps and type(ns.uimaps) == "table" and ns.uimaps[uiMapID]
+	end
+
+	for _, uiMapID in ipairs({
 		12, -- Kalimdor
 		13, -- Eastern Kingdoms
 		101, -- Outland
@@ -55,20 +94,14 @@ do
 		947, -- Azeroth (CPU hog, but it's not too bad?)
 		948, -- The Maelstrom
 		1165, -- Dazar'alor
-	}
-
-	for i = 1, #parentMapIDs do
-		local uiMapID = parentMapIDs[i]
-		local children = C_Map.GetMapChildrenInfo(uiMapID, nil, true) -- Enum.UIMapType.Zone
-
-		for _, child in pairs(children) do
-			if not ns.PARENT_MAP[uiMapID] then
-				ns.PARENT_MAP[uiMapID] = { [uiMapID] = true }
-			end
-
-			ns.PARENT_MAP[uiMapID][child.mapID] = true
-		end
+		1550, -- The Shadowlands
+	}) do
+		CheckMapRecursively(uiMapID, GetChildren, 10)
+		CheckMapRecursively(uiMapID, GetChildrenNS, 10)
 	end
+
+	AddParentChildMapIDs(108, 111) -- Terokkar Forest -> Shattrath City
+
 end
 
 local function GetLowestLevelMapFromMapID(uiMapID, x, y)
@@ -225,6 +258,7 @@ function CandyBucketsDataProviderMixin:RefreshAllData(fromOnShow)
 	local map = self:GetMap()
 	local uiMapID = map:GetMapID()
 	local childUiMapIDs = ns.PARENT_MAP[uiMapID]
+	local tempVector = {}
 	local questPOIs
 
 	if IsModifierKeyDown() then
@@ -249,7 +283,8 @@ function CandyBucketsDataProviderMixin:RefreshAllData(fromOnShow)
 						poi = poi[translateKey]
 
 					else
-						local continentID, worldPos = C_Map.GetWorldPosFromMapPos(childUiMapID, CreateVector2D(poi[1]/100, poi[2]/100)) -- TODO: replace with a table and xy properties?
+						tempVector.x, tempVector.y = poi[1]/100, poi[2]/100
+						local continentID, worldPos = C_Map.GetWorldPosFromMapPos(childUiMapID, tempVector)
 						poi, poi2 = nil, poi
 
 						if continentID and worldPos then
@@ -311,7 +346,7 @@ end
 
 function CandyBucketsPinMixin:OnAcquired(quest, poi)
 	self.quest = quest
-	self:UseFrameLevelType("PIN_FRAME_LEVEL_GOSSIP", self:GetMap():GetNumActivePinsByTemplate("CandyBucketsPinTemplate"))
+	self:UseFrameLevelType("PIN_FRAME_LEVEL_AREA_POI", self:GetMap():GetNumActivePinsByTemplate("CandyBucketsPinTemplate"))
 	self:SetSize(12, 12)
 	self.Texture:SetTexture(quest.module.texture[quest.extra or 1])
 	self.Border:SetTexture(PIN_BORDER_COLOR[quest.side or 0])
@@ -377,7 +412,7 @@ end
 
 function CandyBucketsStatsMixin:OnAcquired(questPOIs)
 	local map = self:GetMap()
-	self:UseFrameLevelType("PIN_FRAME_LEVEL_GOSSIP", map:GetNumActivePinsByTemplate("CandyBucketsStatsTemplate"))
+	self:UseFrameLevelType("PIN_FRAME_LEVEL_AREA_POI", map:GetNumActivePinsByTemplate("CandyBucketsStatsTemplate"))
 	self:SetSize(map:GetSize())
 	self:SetPosition(.5, .5)
 	--self:ClearAllPoints()
