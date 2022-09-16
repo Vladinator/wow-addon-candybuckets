@@ -165,7 +165,7 @@ do
 				local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
 				local mapInfo = C_Map.GetMapInfo(childUiMapID)
 				TomTom:AddWaypoint(childUiMapID, childX, childY, {
-					title = string.format("%s (%s, %d)", poi.name, mapInfo.name or "Map " .. childUiMapID, poi.quest.quest),
+					title = string.format("%s (%s, %d)", poi.name, mapInfo.name or ("Map " .. childUiMapID), poi.quest.quest),
 					minimap = true,
 					crazy = true,
 				})
@@ -181,7 +181,7 @@ do
 							local name = module.title[quest.extra or 1]
 							local mapInfo = C_Map.GetMapInfo(uiMapID)
 							TomTom:AddWaypoint(uiMapID, coords[1]/100, coords[2]/100, {
-								title = string.format("%s (%s, %d)", name, mapInfo.name or "Map " .. uiMapID, quest.quest),
+								title = string.format("%s (%s, %d)", name, mapInfo.name or ("Map " .. uiMapID), quest.quest),
 								minimap = true,
 								crazy = true,
 							})
