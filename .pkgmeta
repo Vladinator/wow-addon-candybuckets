@@ -1,8 +1,8 @@
 package-as: CandyBuckets
 enable-nolib-creation: no
 tools-used:
-		- callbackhandler
-		- herebedragons
-		- libstub
+  - callbackhandler
+  - herebedragons
+  - libstub
 ignore:
   - .travis.yml
