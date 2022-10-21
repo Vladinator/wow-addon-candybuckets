@@ -603,9 +603,9 @@ function addon:CheckCalendar()
 				ongoing = curHour >= event.startTime.hour and (curHour > event.startTime.hour or curMinute >= event.startTime.minute)
 			elseif event.sequenceType == "END" then
 				ongoing = curHour <= event.endTime.hour and (curHour < event.endTime.hour or curMinute <= event.endTime.minute)
-				-- TODO: linger for 3 hours extra just in case event is active but not in the calendar
+				-- TODO: linger for 12 hours extra just in case event is active but not in the calendar due to timezone differences
 				if not ongoing then
-					local paddingHour = max(0, curHour - 3)
+					local paddingHour = max(0, curHour - 12)
 					ongoing = paddingHour <= event.endTime.hour and (paddingHour < event.endTime.hour or curMinute <= event.endTime.minute)
 				end
 			end
