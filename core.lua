@@ -38,6 +38,7 @@ end
 
 ---@class CandyBucketsWaypointAddOn
 ---@field public name string
+---@field public standard? boolean
 ---@field public func fun(self: CandyBucketsWaypointAddOn, poi: CandyBucketsMapPosition, wholeModule?: boolean): boolean
 ---@field public funcAll fun(self: CandyBucketsWaypointAddOn, module: CandyBucketsModule): boolean
 
@@ -287,6 +288,7 @@ do
 	-- C_Map.SetUserWaypoint (9.0.1)
 	table.insert(waypointAddons, {
 		name = "Waypoint",
+		standard = true,
 		---@param self CandyBucketsWaypointAddOn
 		---@param poi CandyBucketsMapPosition
 		---@param wholeModule? boolean
@@ -334,7 +336,7 @@ do
 	function ns:GetWaypointAddon()
 		for i = 1, #waypointAddons do
 			local waypoint = waypointAddons[i]
-			if IsAddOnLoaded(waypoint.name) then
+			if waypoint.standard or IsAddOnLoaded(waypoint.name) then
 				return waypoint
 			end
 		end
@@ -358,8 +360,7 @@ do
 		local status, err = pcall(function() return waypoint:func(poi, wholeModule) end)
 		if not status or err ~= true then
 			if not silent then
-				DEFAULT_CHAT_FRAME:AddMessage("Unable to set waypoint using " .. waypoint.name .. (type(err) == "string" and ": " .. err or ""), 1, 1, 0)
-				DEFAULT_CHAT_FRAME:AddMessage(format("Unable to set waypoint using %s%s", waypoint.name, type(err) == "string" and format(": %s", err) or "."), 1, 1, 0)
+				DEFAULT_CHAT_FRAME:AddMessage(format("Unable to set waypoint%s%s", waypoint.standard and "" or format(" using %s", waypoint.name), type(err) == "string" and format(": %s", err) or "."), 1, 1, 0)
 			end
 			return false
 		end
