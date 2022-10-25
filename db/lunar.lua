@@ -1,4 +1,4 @@
-local _, ns = ...
+local _, ns = ... ---@type any, CandyBucketsNS
 
 ns.modules = ns.modules or {}
 

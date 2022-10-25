@@ -2,7 +2,77 @@ if WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE then
 	return
 end
 
-local addonName, ns = ...
+---@alias CandyBucketsModuleName "hallow"|"lunar"|"midsummer"
+
+---@class CandyBucketsNS : table
+---@field public modules table<CandyBucketsModuleName, CandyBucketsModule>
+---@field public uimaps table<number, UiMapDetails[]>
+
+---@class CandyBucketsQuest : table
+---@field public quest number
+---@field public side number
+---@field public extra? number
+---@field public module? CandyBucketsModule
+
+---@class CandyBucketsModule
+---@field public event CandyBucketsModuleName
+---@field public texture string[]
+---@field public title string[]
+---@field public quests CandyBucketsQuest[]
+---@field public patterns string[]
+---@field public loaded? boolean
+
+---@class CandyBucketsMapCanvas : Frame
+---@field public GetMap fun(): CandyBucketsMapPosition
+---@field public GetMapID fun(): number
+---@field public RemoveAllPinsByTemplate fun(self: CandyBucketsMapCanvas, template: string)
+---@field public AcquirePin fun(self: CandyBucketsMapCanvas, template: string, ...)
+---@field public RefreshAllData fun(self: CandyBucketsMapCanvas, fromOnShow?: boolean)
+---@field public GetNumActivePinsByTemplate fun(self: CandyBucketsMapCanvas, template: string): number
+
+---@class CandyBucketsMapPosition : CandyBucketsMapCanvas
+---@field public name string
+---@field public quest? CandyBucketsQuest
+---@field public GetPosition fun(): x: number, y: number
+---@field public SetPosition fun(self: CandyBucketsMapPosition, x: number, y: number)
+
+---@class CandyBucketsWaypointAddOn
+---@field public name string
+---@field public func fun(self: CandyBucketsWaypointAddOn, poi: CandyBucketsMapPosition, wholeModule?: boolean): boolean
+---@field public funcAll fun(self: CandyBucketsWaypointAddOn, module: CandyBucketsModule): boolean
+
+---@class CandyBucketsDataProvider : CandyBucketsMapCanvas
+
+---@class CandyBucketsPin : CandyBucketsMapPosition
+---@field public SetScalingLimits fun(self: CandyBucketsPin, scaleFactor: number, startScale: number, endScale: number)
+---@field public UseFrameLevelType fun(self: CandyBucketsPin, template: string, level: number)
+---@field public HighlightTexture Texture
+---@field public Texture Texture
+---@field public Border Texture
+
+---@class CandyBucketsStats : CandyBucketsPin
+---@field public Text FontString
+
+---@class CandyBucketsEvalPositionQuestInfo
+---@field public module? CandyBucketsModule
+---@field public quest? CandyBucketsEvalPositionQuestInfo
+---@field public side? number
+---@field public missing? boolean
+---@field public error? string
+---@field public warning? string
+---@field public success? string
+---@field public name? string
+---@field public uiMapID? number
+---@field public x? number
+---@field public y? number
+---@field public distance? number
+
+---@class CandyBucketsEvalPositionRetInfo
+---@field public has boolean
+---@field public success boolean
+---@field public data? CandyBucketsEvalPositionQuestInfo
+
+local addonName, ns = ... ---@type string, CandyBucketsNS
 
 --
 -- Debug
@@ -17,9 +87,10 @@ local DEBUG_LOCATION = false
 --
 
 ns.FACTION = 0
-ns.QUESTS = {}
-ns.PROVIDERS = {}
+ns.QUESTS = {} ---@type CandyBucketsQuest[]
+ns.PROVIDERS = {} ---@type table<CandyBucketsDataProvider, true|nil>
 
+---@type table<number, boolean>
 ns.COMPLETED_QUESTS = setmetatable({}, {
 	__index = function(self, questID)
 		local isCompleted = C_QuestLog.IsQuestFlaggedCompleted(questID)
@@ -34,9 +105,11 @@ ns.COMPLETED_QUESTS = setmetatable({}, {
 -- Map
 --
 
-ns.PARENT_MAP = {}
+ns.PARENT_MAP = {} ---@type table<number, table<number, boolean>>
 do
 
+	---@param uiParentMapID number
+	---@param uiChildMapID number
 	local function AddParentChildMapIDs(uiParentMapID, uiChildMapID)
 		if not ns.PARENT_MAP[uiParentMapID] then
 			ns.PARENT_MAP[uiParentMapID] = { [uiParentMapID] = true }
@@ -44,6 +117,10 @@ do
 		ns.PARENT_MAP[uiParentMapID][uiChildMapID] = true
 	end
 
+	---@param uiMapID number
+	---@param getChildren fun(uiMapID: number): UiMapDetails[]?
+	---@param depthRemaining number
+	---@param uiParentMapIDs? table<number, boolean>
 	local function CheckMapRecursively(uiMapID, getChildren, depthRemaining, uiParentMapIDs)
 		if not uiMapID or not getChildren then return end
 		if not depthRemaining then depthRemaining = 1 end
@@ -67,12 +144,14 @@ do
 		end
 	end
 
+	---@return UiMapDetails[]?
 	local function GetChildren(uiMapID)
 		return C_Map.GetMapChildrenInfo(uiMapID, nil, true) -- Enum.UIMapType.Zone
 	end
 
+	---@return UiMapDetails[]?
 	local function GetChildrenNS(uiMapID)
-		return ns.uimaps and type(ns.uimaps) == "table" and ns.uimaps[uiMapID]
+		return ns.uimaps and type(ns.uimaps) == "table" and ns.uimaps[uiMapID] ---@diagnostic disable-line: return-type-mismatch
 	end
 
 	for _, uiMapID in ipairs({
@@ -104,6 +183,10 @@ do
 
 end
 
+---@param uiMapID number
+---@param x number
+---@param y number
+---@return number uiMapID, number x, number y
 local function GetLowestLevelMapFromMapID(uiMapID, x, y)
 	if not uiMapID or not x or not y then
 		return uiMapID, x, y
@@ -127,6 +210,7 @@ local function GetLowestLevelMapFromMapID(uiMapID, x, y)
 	return uiMapID, x, y
 end
 
+---@return number? uiMapID, Vector2DMixin? pos
 local function GetPlayerMapAndPosition()
 	local unit = "player"
 
@@ -150,11 +234,16 @@ end
 -- ns:GetWaypointAddon()
 -- ns:AutoWaypoint(poi, wholeModule, silent)
 do
+
+	---@type CandyBucketsWaypointAddOn[]
 	local waypointAddons = {}
 
 	-- TomTom (v80001-1.0.2)
 	table.insert(waypointAddons, {
 		name = "TomTom",
+		---@param self CandyBucketsWaypointAddOn
+		---@param poi CandyBucketsMapPosition
+		---@param wholeModule? boolean
 		func = function(self, poi, wholeModule)
 			if wholeModule then
 				self:funcAll(poi.quest.module)
@@ -172,6 +261,8 @@ do
 			end
 			return true
 		end,
+		---@param self CandyBucketsWaypointAddOn
+		---@param module CandyBucketsModule
 		funcAll = function(self, module)
 			for i = 1, #ns.QUESTS do
 				local quest = ns.QUESTS[i]
@@ -193,12 +284,53 @@ do
 		end,
 	})
 
-	local supportedAddons = ""
-	local supportedAddonsWarned = false
-	for i = 1, #waypointAddons do
-		supportedAddons = supportedAddons .. waypointAddons[i].name .. " "
-	end
+	-- C_Map.SetUserWaypoint (9.0.1)
+	table.insert(waypointAddons, {
+		name = "Waypoint",
+		---@param self CandyBucketsWaypointAddOn
+		---@param poi CandyBucketsMapPosition
+		---@param wholeModule? boolean
+		func = function(self, poi, wholeModule)
+			if wholeModule then
+				self:funcAll(poi.quest.module)
+			else
+				local uiMapID = poi:GetMap():GetMapID()
+				local x, y = poi:GetPosition()
+				local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
+				local mapInfo = C_Map.GetMapInfo(childUiMapID)
+				if not C_Map.CanSetUserWaypointOnMap(childUiMapID) then
+					return format("Can't make a waypoint to %s. Enter the continent then try again.", mapInfo.name)
+				end
+				C_Map.SetUserWaypoint({ uiMapID = childUiMapID, position = { x = childX, y = childY } })
+			end
+			return true
+		end,
+		---@param self CandyBucketsWaypointAddOn
+		---@param module CandyBucketsModule
+		funcAll = function(self, module)
+			for i = 1, #ns.QUESTS do
+				local quest = ns.QUESTS[i]
+				if quest.module == module then
+					for uiMapID, coords in pairs(quest) do
+						if type(uiMapID) == "number" and type(coords) == "table" then
+							if C_Map.CanSetUserWaypointOnMap(uiMapID) then
+								C_Map.SetUserWaypoint({ uiMapID = uiMapID, position = { x = coords[1]/100, y = coords[2]/100 } })
+								return true
+							end
+						end
+					end
+				end
+			end
+			return "Can't make a waypoint to any destination."
+		end,
+	})
 
+	local supportedAddons = {} ---@type string[]
+	local supportedAddonsWarned = false
+	for k, v in ipairs(waypointAddons) do supportedAddons[k] = v.name end
+	supportedAddons = table.concat(supportedAddons, " ") ---@diagnostic disable-line: cast-local-type
+
+	---@return CandyBucketsWaypointAddOn? waypoint
 	function ns:GetWaypointAddon()
 		for i = 1, #waypointAddons do
 			local waypoint = waypointAddons[i]
@@ -208,6 +340,10 @@ do
 		end
 	end
 
+	---@param poi CandyBucketsMapPosition
+	---@param wholeModule? boolean
+	---@param silent? boolean
+	---@return boolean success
 	function ns:AutoWaypoint(poi, wholeModule, silent)
 		local waypoint = ns:GetWaypointAddon()
 		if not waypoint then
@@ -223,17 +359,20 @@ do
 		if not status or err ~= true then
 			if not silent then
 				DEFAULT_CHAT_FRAME:AddMessage("Unable to set waypoint using " .. waypoint.name .. (type(err) == "string" and ": " .. err or ""), 1, 1, 0)
+				DEFAULT_CHAT_FRAME:AddMessage(format("Unable to set waypoint using %s%s", waypoint.name, type(err) == "string" and format(": %s", err) or "."), 1, 1, 0)
 			end
 			return false
 		end
 		return true
 	end
+
 end
 
 --
 -- Mixin
 --
 
+---@type CandyBucketsDataProvider
 CandyBucketsDataProviderMixin = CreateFromMixins(MapCanvasDataProviderMixin)
 
 function CandyBucketsDataProviderMixin:OnShow()
@@ -258,8 +397,8 @@ function CandyBucketsDataProviderMixin:RefreshAllData(fromOnShow)
 	local map = self:GetMap()
 	local uiMapID = map:GetMapID()
 	local childUiMapIDs = ns.PARENT_MAP[uiMapID]
-	local tempVector = {}
-	local questPOIs
+	local tempVector = {} ---@type Vector2DMixin
+	local questPOIs ---@type table<CandyBucketsQuest, Vector2DMixin>?
 
 	if IsModifierKeyDown() then
 		questPOIs = {}
@@ -267,14 +406,15 @@ function CandyBucketsDataProviderMixin:RefreshAllData(fromOnShow)
 
 	for i = 1, #ns.QUESTS do
 		local quest = ns.QUESTS[i]
-		local poi, poi2
+		local poi ---@type Vector2DMixin?
+		local poi2 ---@type Vector2DMixin?
 
 		if not childUiMapIDs then
-			poi = quest[uiMapID]
+			poi = quest[uiMapID] ---@type Vector2DMixin?
 
 		else
 			for childUiMapID, _ in pairs(childUiMapIDs) do
-				poi = quest[childUiMapID]
+				poi = quest[childUiMapID] ---@type Vector2DMixin?
 
 				if poi then
 					local translateKey = uiMapID .. "," .. childUiMapID
@@ -330,6 +470,7 @@ local PIN_BORDER_COLOR = {
 	[3] = "Interface\\Buttons\\YELLOWORANGE64",
 }
 
+---@type CandyBucketsPin
 CandyBucketsPinMixin = CreateFromMixins(MapCanvasPinMixin)
 
 function CandyBucketsPinMixin:OnLoad()
@@ -400,6 +541,7 @@ end
 -- Stats
 --
 
+---@type CandyBucketsStats
 CandyBucketsStatsMixin = CreateFromMixins(MapCanvasPinMixin)
 
 function CandyBucketsStatsMixin:OnLoad()
@@ -513,6 +655,8 @@ local InjectDataProvider do
 	end
 end
 
+---@param onlyShownMaps boolean
+---@param fromOnShow? boolean
 function addon:RefreshAllWorldMaps(onlyShownMaps, fromOnShow)
 	for dataProvider, _ in pairs(ns.PROVIDERS) do
 		if not onlyShownMaps or dataProvider:GetMap():IsShown() then
@@ -521,6 +665,7 @@ function addon:RefreshAllWorldMaps(onlyShownMaps, fromOnShow)
 	end
 end
 
+---@param questID number
 function addon:RemoveQuestPois(questID)
 	local removed = 0
 
@@ -536,14 +681,17 @@ function addon:RemoveQuestPois(questID)
 	return removed > 0
 end
 
+---@param name CandyBucketsModuleName
 function addon:CanLoadModule(name)
 	return type(ns.modules[name]) == "table" and ns.modules[name].loaded ~= true
 end
 
+---@param name CandyBucketsModuleName
 function addon:CanUnloadModule(name)
 	return type(ns.modules[name]) == "table" and ns.modules[name].loaded == true
 end
 
+---@param name CandyBucketsModuleName
 function addon:LoadModule(name)
 	local module = ns.modules[name]
 	module.loaded = true
@@ -562,6 +710,7 @@ function addon:LoadModule(name)
 	addon:RefreshAllWorldMaps(true)
 end
 
+---@param name CandyBucketsModuleName
 function addon:UnloadModule(name)
 	local module = ns.modules[name]
 	module.loaded = false
@@ -660,6 +809,7 @@ function addon:CheckCalendar()
 	end
 end
 
+---@param check? boolean
 function addon:QueryCalendar(check)
 	local function DelayedUpdate()
 		if type(CalendarFrame) ~= "table" or not CalendarFrame:IsShown() then
@@ -684,9 +834,11 @@ function addon:QueryCalendar(check)
 	end
 end
 
+---@param questID number
+---@return boolean? success, CandyBucketsEvalPositionQuestInfo? info, number? poiCount
 function addon:IsDeliveryLocationExpected(questID)
-	local questCollection = {}
-	local questName
+	local questCollection = {} ---@type CandyBucketsEvalPositionQuestInfo[]
+	local questName ---@type string?
 
 	for i = 1, #ns.QUESTS do
 		local quest = ns.QUESTS[i]
@@ -699,9 +851,9 @@ function addon:IsDeliveryLocationExpected(questID)
 		questName = C_QuestLog.GetTitleForQuestID(questID)
 
 		if questName then
-			local missingFromModule
+			local missingFromModule ---@type CandyBucketsModule?
 
-			for name, module in pairs(ns.modules) do
+			for _, module in pairs(ns.modules) do
 				if module.loaded == true then
 					for _, pattern in pairs(module.patterns) do
 						if questName:match(pattern) then
@@ -739,33 +891,33 @@ function addon:IsDeliveryLocationExpected(questID)
 	end
 
 	local returnCount = 0
-	local returns = {}
+	local returns = {} ---@type CandyBucketsEvalPositionRetInfo[]
 
 	for i = 1, #questCollection do
 		local quest = questCollection[i]
-		local qpos = quest[uiMapID]
+		local qpos = quest[uiMapID] ---@type CandyBucketsMapPosition
 
-		local ret = {}
+		local ret = {} ---@type CandyBucketsEvalPositionRetInfo
 		returnCount = returnCount + 1
 		returns[returnCount] = ret
 
 		repeat
 			if type(qpos) == "table" then
 				local distance = quest.missing and 1 or 0
-		
+
 				if not quest.missing then
 					local dx = qpos[1]/100 - pos.x
 					local dy = qpos[2]/100 - pos.y
-		
+
 					local dd = dx*dx + dy*dy
 					if dd < 0 then
 						ret.has, ret.success, ret.data = true, nil, DEBUG_LOCATION and { error = "Distance calculated is negative. Can't sqrt negative numbers." } or nil
 						break
 					end
-		
+
 					distance = sqrt(dd)
 				end
-		
+
 				if distance > 0.02 then
 					ret.has, ret.success, ret.data = true, false, { quest = quest, uiMapID = uiMapID, x = pos.x, y = pos.y, distance = distance }
 				elseif DEBUG_LOCATION then
@@ -773,7 +925,7 @@ function addon:IsDeliveryLocationExpected(questID)
 				else
 					ret.has, ret.success = true, true
 				end
-		
+
 			elseif not quest.missing then
 				ret.has, ret.success, ret.data = true, false, { quest = quest, uiMapID = uiMapID, x = pos.x, y = pos.y, distance = 1 }
 			end
@@ -877,7 +1029,7 @@ function addon:QUEST_TURNED_IN(event, questID)
 				DEFAULT_CHAT_FRAME:AddMessage(format("|cffFFFFFFmxy|r = |cffFFFFFF%s|r @ |cffFFFFFF%.2f|r, |cffFFFFFF%.2f|r", info.uiMapID and tostring(info.uiMapID) or "?", info.x * 100, info.y * 100), 1, 1, 0)
 			end
 		end
-	elseif success == false then
+	elseif success == false and info then
 		DEFAULT_CHAT_FRAME:AddMessage(format("|cffFFFFFF%s|r quest |cffFFFFFF%s#%d|r turned in at the wrong location. You were at |cffFFFFFF%d/%d/%.2f/%.2f|r roughly |cffFFFFFF%.2f|r units away from the expected %s. Please screenshot/copy this message and report it to the author. Thanks!", addonName, info.quest.module.event, questID, ns.FACTION, info.uiMapID, info.x * 100, info.y * 100, info.distance * 100, checkedNumQuestPOIs and checkedNumQuestPOIs > 1 and checkedNumQuestPOIs .. " locations" or "location"), 1, 1, 0)
 	end
 
