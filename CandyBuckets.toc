@@ -1,8 +1,8 @@
-﻿## Interface: 90207
+﻿## Interface: 100000
 ## Title: CandyBuckets
 ## Notes: Shows map icons for Lunar Festival, Hallow's End and Midsummer Fire Festival!
 ## Author: Vladinator
-## Version: 9.2.7.221021
+## Version: 10.0.0.221026
 ## X-Curse-Project-ID: 44213
 ## X-WoWI-ID: 20450
 db\hallow.lua
