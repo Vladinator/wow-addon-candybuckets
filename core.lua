@@ -919,7 +919,12 @@ function addon:IsDeliveryLocationExpected(questID)
 					distance = sqrt(dd)
 				end
 
-				if distance > 0.02 then
+				local mapWidth, mapHeight = C_Map.GetMapWorldSize(uiMapID)
+				local mapSize = min(mapWidth, mapHeight)
+				local mapScale = mapSize > 0 and 100/mapSize or 0
+				local warnDistanceForMap = mapScale > 0 and mapScale or 0.05 -- we convert the actual map size into the same scale as we use for the distance - fallback to 0.05 if we're missing data
+
+				if distance > warnDistanceForMap then
 					ret.has, ret.success, ret.data = true, false, { quest = quest, uiMapID = uiMapID, x = pos.x, y = pos.y, distance = distance }
 				elseif DEBUG_LOCATION then
 					ret.has, ret.success, ret.data = true, true, { success = "Player turned in quest at an acceptable distance.", quest = quest, uiMapID = uiMapID, x = pos.x, y = pos.y, distance = distance }
