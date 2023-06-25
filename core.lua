@@ -182,6 +182,7 @@ do
 
 	AddParentChildMapIDs(108, 111) -- Terokkar Forest -> Shattrath City
 	AddParentChildMapIDs(1978, 2151) -- Dragon Isles -> The Forbidden Reach
+	AddParentChildMapIDs(947, 2151) -- Azeroth -> The Forbidden Reach
 
 end
 
