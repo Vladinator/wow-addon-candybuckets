@@ -957,6 +957,102 @@ function addon:IsDeliveryLocationExpected(questID)
 	return true, DEBUG_LOCATION and { warning = "Player is not on appropriate map for this quest and can't calculate distance." } or nil, returnCount
 end
 
+function addon:CanUseAddonLinks()
+	local _, _, _, build = GetBuildInfo()
+	return build >= 100100
+end
+
+---@param entry string
+function addon:CreateAddonCopyLink(entry)
+	return format("|cFFFF5555|Haddon:%s:%s|h[Click here to copy this message]|h|r", addonName, entry)
+end
+
+---@param text string
+function addon:ShowCopyDialog(text)
+	local key = format("%s Copy Dialog", addonName)
+
+	if not StaticPopupDialogs[key] then
+		StaticPopupDialogs[key] = {
+			text = "",
+			button1 = "",
+			-- button2 = "",
+			hasEditBox = 1,
+			OnShow = function(self, data)
+				if data.text_arg1 ~= nil then
+					self.text:SetFormattedText(data.text, data.text_arg1, data.text_arg2)
+				else
+					self.text:SetText(data.text)
+				end
+				if data.acceptText ~= false then
+					self.button1:SetText(data.acceptText or DONE)
+				else
+					self.button1:Hide()
+				end
+				if data.cancelText ~= false then
+					self.button2:SetText(data.cancelText or CANCEL)
+				else
+					self.button2:Hide()
+				end
+				self.editBox:SetMaxLetters(data.maxLetters or 255)
+				self.editBox:SetCountInvisibleLetters(not not data.countInvisibleLetters)
+				if data.editBox then
+					self.editBox:SetText(data.editBox)
+					self.editBox:HighlightText()
+				end
+			end,
+			OnAccept = function(self, data)
+				if data.callback then
+					data.callback(self.editBox:GetText())
+				end
+			end,
+			OnCancel = function(self, data)
+				if data.cancelCallback then
+					data.cancelCallback()
+				end
+			end,
+			EditBoxOnEnterPressed = function(self, data)
+				local parent = self:GetParent();
+				if parent.button1:IsEnabled() then
+					if data.callback then
+						data.callback(parent.editBox:GetText())
+					end
+					parent:Hide()
+				end
+			end,
+			EditBoxOnTextChanged = function(self)
+				-- local parent = self:GetParent()
+				-- parent.button1:SetEnabled(parent.editBox:GetText():trim() ~= "")
+			end,
+			EditBoxOnEscapePressed = function(self)
+				self:GetParent():Hide()
+			end,
+			hideOnEscape = 1,
+			timeout = 0,
+			exclusive = 1,
+			whileDead = 1,
+		}
+	end
+
+	return StaticPopup_Show(key, nil, nil, {
+		text = "The contents below contain the required information to update the quest with a more accurate location.",
+		editBox = text,
+		acceptText = CLOSE,
+	})
+end
+
+-- hook `SetItemRef` if addon links are supported (and call `ShowCopyDialog` when the links are clicked)
+if addon:CanUseAddonLinks() then
+	local function HandleAddonLinkClick(link)
+		local linkType, prefix, param1 = strsplit(":", link, 3)
+		if linkType ~= "addon" or prefix ~= addonName then
+			return
+		end
+		addon:ShowCopyDialog(param1)
+	end
+
+	hooksecurefunc("SetItemRef", HandleAddonLinkClick)
+end
+
 --
 -- Events
 --
@@ -1038,7 +1134,13 @@ function addon:QUEST_TURNED_IN(event, questID)
 			end
 		end
 	elseif success == false and info then
-		DEFAULT_CHAT_FRAME:AddMessage(format("|cffFFFFFF%s|r quest |cffFFFFFF%s#%d|r turned in at the wrong location. You were at |cffFFFFFF%d/%d/%.2f/%.2f|r roughly |cffFFFFFF%.2f|r units away from the expected %s. Please screenshot/copy this message and report it to the author. Thanks!", addonName, info.quest.module.event, questID, ns.FACTION, info.uiMapID, info.x * 100, info.y * 100, info.distance * 100, checkedNumQuestPOIs and checkedNumQuestPOIs > 1 and checkedNumQuestPOIs .. " locations" or "location"), 1, 1, 0)
+		local suffix = "Please screenshot this message and report it to the author."
+		if addon:CanUseAddonLinks() then
+			local entry = format("{ quest = %d, side = %d, [%d] = {%.2f, %.2f} }, -- %.2f, %s", questID, ns.FACTION, info.uiMapID, info.x * 100, info.y * 100, info.distance * 100, GetMinimapZoneText() or "N/A")
+			local link = addon:CreateAddonCopyLink(entry)
+			suffix = format("%s, then report it to the author.", link)
+		end
+		DEFAULT_CHAT_FRAME:AddMessage(format("|cffFFFFFF%s|r quest |cffFFFFFF%s#%d|r turned in at the wrong location. You were at |cffFFFFFF%d/%d/%.2f/%.2f|r roughly |cffFFFFFF%.2f|r units away from the expected %s. %s Thanks!", addonName, info.quest.module.event, questID, ns.FACTION, info.uiMapID, info.x * 100, info.y * 100, info.distance * 100, checkedNumQuestPOIs and checkedNumQuestPOIs > 1 and checkedNumQuestPOIs .. " locations" or "location", suffix), 1, 1, 0)
 	end
 
 	if addon:RemoveQuestPois(questID) then
