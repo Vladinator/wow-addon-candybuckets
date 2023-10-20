@@ -33,9 +33,3 @@ nppBackup/
 
 # Misc
 *.ignore
-
-# Script related
-*.json
-*.php
-*.lua_backup
-*.csv

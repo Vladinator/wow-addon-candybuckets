@@ -69,11 +69,12 @@ end
 ---@field public distance? number
 
 ---@class CandyBucketsEvalPositionRetInfo
----@field public has boolean
----@field public success boolean
+---@field public has? boolean
+---@field public success? boolean
 ---@field public data? CandyBucketsEvalPositionQuestInfo
 
-local addonName, ns = ... ---@type string, CandyBucketsNS
+local addonName = ... ---@type string
+local ns = select(2, ...) ---@class CandyBucketsNS
 
 --
 -- Debug
@@ -89,7 +90,7 @@ local DEBUG_LOCATION = false
 
 ns.FACTION = 0
 ns.QUESTS = {} ---@type CandyBucketsQuest[]
-ns.PROVIDERS = {} ---@type table<CandyBucketsDataProvider, true|nil>
+ns.PROVIDERS = {} ---@type table<CandyBucketsDataProvider, true?>
 
 ---@type table<number, boolean>
 ns.COMPLETED_QUESTS = setmetatable({}, {
@@ -135,7 +136,7 @@ do
 		if children and type(children) == "table" then
 			for _, uiChildMapID in pairs(children) do
 				if type(uiChildMapID) == "table" then
-					uiChildMapID = uiChildMapID.mapID
+					uiChildMapID = uiChildMapID.mapID ---@diagnostic disable-line: cast-local-type
 				end
 				if type(uiChildMapID) == "number" then
 					AddParentChildMapIDs(uiMapID, uiChildMapID)
@@ -375,7 +376,7 @@ end
 -- Mixin
 --
 
----@type CandyBucketsDataProvider
+---@class CandyBucketsDataProvider
 CandyBucketsDataProviderMixin = CreateFromMixins(MapCanvasDataProviderMixin)
 
 function CandyBucketsDataProviderMixin:OnShow()
@@ -384,6 +385,8 @@ end
 function CandyBucketsDataProviderMixin:OnHide()
 end
 
+---@param event WowEvent
+---@param ... any
 function CandyBucketsDataProviderMixin:OnEvent(event, ...)
 	-- self:RefreshAllData()
 end
@@ -394,6 +397,7 @@ function CandyBucketsDataProviderMixin:RemoveAllData()
 	map:RemoveAllPinsByTemplate("CandyBucketsStatsTemplate")
 end
 
+---@param fromOnShow boolean?
 function CandyBucketsDataProviderMixin:RefreshAllData(fromOnShow)
 	self:RemoveAllData()
 
@@ -473,7 +477,12 @@ local PIN_BORDER_COLOR = {
 	[3] = "Interface\\Buttons\\YELLOWORANGE64",
 }
 
----@type CandyBucketsPin
+---@class CandyBucketsPin
+---@field public quest? any
+---@field public name? string
+---@field public description? string
+
+---@class CandyBucketsPin
 CandyBucketsPinMixin = CreateFromMixins(MapCanvasPinMixin)
 
 function CandyBucketsPinMixin:OnLoad()
@@ -488,6 +497,8 @@ function CandyBucketsPinMixin:OnLoad()
 	self.Border:SetTexture(PIN_BORDER_COLOR[0])
 end
 
+---@param quest CandyBucketsQuest
+---@param poi Vector2DMixin
 function CandyBucketsPinMixin:OnAcquired(quest, poi)
 	self.quest = quest
 	self:UseFrameLevelType("PIN_FRAME_LEVEL_AREA_POI", self:GetMap():GetNumActivePinsByTemplate("CandyBucketsPinTemplate"))
@@ -512,7 +523,9 @@ function CandyBucketsPinMixin:OnAcquired(quest, poi)
 end
 
 function CandyBucketsPinMixin:OnReleased()
-	self.quest, self.name, self.description = nil
+	self.quest = nil
+	self.name = nil
+	self.description = nil
 end
 
 function CandyBucketsPinMixin:OnMouseEnter()
@@ -544,7 +557,12 @@ end
 -- Stats
 --
 
----@type CandyBucketsStats
+---@class CandyBucketsStats
+---@field public hasTooltip boolean
+---@field public name? string
+---@field public description? string
+
+---@class CandyBucketsStats
 CandyBucketsStatsMixin = CreateFromMixins(MapCanvasPinMixin)
 
 function CandyBucketsStatsMixin:OnLoad()
@@ -555,6 +573,7 @@ function CandyBucketsStatsMixin:OnLoad()
 	self.Texture:Hide()
 end
 
+---@param questPOIs table<CandyBucketsQuest, Vector2DMixin>
 function CandyBucketsStatsMixin:OnAcquired(questPOIs)
 	local map = self:GetMap()
 	self:UseFrameLevelType("PIN_FRAME_LEVEL_AREA_POI", map:GetNumActivePinsByTemplate("CandyBucketsStatsTemplate"))
@@ -594,7 +613,8 @@ function CandyBucketsStatsMixin:OnAcquired(questPOIs)
 end
 
 function CandyBucketsStatsMixin:OnReleased()
-	self.name, self.description = nil -- TODO: ?
+	self.name = nil
+	self.description = nil
 end
 
 function CandyBucketsStatsMixin:OnMouseEnter()
@@ -640,7 +660,7 @@ local MODULE_FROM_TEXTURE = {
 -- Addon
 --
 
-local addon = CreateFrame("Frame")
+local addon = CreateFrame("Frame") ---@class CandyBucketsAddOn : Frame
 addon:SetScript("OnEvent", function(addon, event, ...) addon[event](addon, event, ...) end)
 addon:RegisterEvent("ADDON_LOADED")
 addon:RegisterEvent("PLAYER_LOGIN")

@@ -1,0 +1,25 @@
+{
+    "Lua.diagnostics.globals": [
+        "CalendarFrame",
+        "CANCEL",
+        "CLOSE",
+        "DEFAULT_CHAT_FRAME",
+        "DONE",
+        "GameTooltip",
+        "GameTooltip_AddNormalLine",
+        "GameTooltip_SetTitle",
+        "MapCanvasDataProviderMixin",
+        "MapCanvasPinMixin",
+        "message",
+        "StaticPopup_Show",
+        "StaticPopup_ShowCustomGenericInputBox",
+        "StaticPopup_StandardEditBoxOnEscapePressed",
+        "StaticPopup_StandardNonEmptyTextHandler",
+        "StaticPopupDialogs",
+        "TomTom",
+        "UNKNOWN",
+        "UserEditBoxNonEmpty",
+        "WorldMapFrame",
+        "WorldMapMixin"
+    ]
+}
