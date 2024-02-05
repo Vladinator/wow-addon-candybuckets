@@ -10,7 +10,7 @@ end
 
 ---@class CandyBucketsQuest : table
 ---@field public quest number
----@field public side number
+---@field public side number `1` = Alliance, `2` = Horde, `3` = Neutral
 ---@field public extra? number
 ---@field public module? CandyBucketsModule
 
@@ -57,7 +57,7 @@ end
 ---@class CandyBucketsEvalPositionQuestInfo
 ---@field public module? CandyBucketsModule
 ---@field public quest? CandyBucketsEvalPositionQuestInfo
----@field public side? number
+---@field public side? number `1` = Alliance, `2` = Horde, `3` = Neutral
 ---@field public missing? boolean
 ---@field public error? string
 ---@field public warning? string
@@ -88,7 +88,7 @@ local DEBUG_LOCATION = false
 -- Session
 --
 
-ns.FACTION = 0
+ns.FACTION = 0 --- `1` = Alliance, `2` = Horde, `3` = Neutral
 ns.QUESTS = {} ---@type CandyBucketsQuest[]
 ns.PROVIDERS = {} ---@type table<CandyBucketsDataProvider, true?>
 
@@ -339,7 +339,7 @@ do
 	function ns:GetWaypointAddon()
 		for i = 1, #waypointAddons do
 			local waypoint = waypointAddons[i]
-			if waypoint.standard or IsAddOnLoaded(waypoint.name) then
+			if waypoint.standard or C_AddOns.IsAddOnLoaded(waypoint.name) then
 				return waypoint
 			end
 		end
