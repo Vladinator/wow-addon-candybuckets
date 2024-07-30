@@ -16,9 +16,13 @@ ns.modules["midsummer"] = {
 	},
 	quests = {
 		{ quest = 11737, side = 2, extra = 1, [17] = {55.20, 15.30} },
+		{ quest = 11737, side = 2, extra = 3, [17] = {48.16, 7.29} },
 		{ quest = 11808, side = 1, extra = 2, [17] = {55.54, 14.89} },
+		{ quest = 11808, side = 1, extra = 3, [17] = {48.16, 7.29} },
 		{ quest = 28917, side = 1, extra = 1, [17] = {46.29, 14.02} },
+		{ quest = 28917, side = 1, extra = 3, [17] = {48.16, 7.29} },
 		{ quest = 28930, side = 2, extra = 2, [17] = {46.00, 14.00} },
+		{ quest = 28930, side = 2, extra = 3, [17] = {48.16, 7.29} },
 		{ quest = 29036, side = 3, extra = 2, [207] = {49.40, 51.40} },
 		{ quest = 11580, side = 1, extra = 1, [21] = {49.60, 38.70} },
 		{ quest = 11581, side = 2, extra = 1, [52] = {45.20, 62.30} },
