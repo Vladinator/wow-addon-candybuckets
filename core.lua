@@ -2,7 +2,7 @@ if WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE then
 	return
 end
 
----@alias CandyBucketsModuleName "hallow"|"lunar"|"midsummer"
+---@alias CandyBucketsModuleName "brewfest"|"hallow"|"lunar"|"midsummer"
 
 ---@class CandyBucketsNS : table
 ---@field public modules table<CandyBucketsModuleName, CandyBucketsModule>
@@ -176,6 +176,8 @@ do
 		948, -- The Maelstrom
 		1165, -- Dazar'alor
 		1550, -- The Shadowlands
+		1978, -- Dragon Isles
+		2274, -- Khaz Algar
 	}) do
 		CheckMapRecursively(uiMapID, GetChildren, 10)
 		CheckMapRecursively(uiMapID, GetChildrenNS, 10)
@@ -644,6 +646,7 @@ end
 
 ns.modules = ns.modules or {}
 
+---@type table<number, CandyBucketsModuleName>
 local MODULE_FROM_TEXTURE = {
 	[235461] = "hallow",
 	[235462] = "hallow",
@@ -654,6 +657,9 @@ local MODULE_FROM_TEXTURE = {
 	[235473] = "midsummer",
 	[235474] = "midsummer",
 	[235472] = "midsummer",
+	[235442] = "brewfest",
+	[235441] = "brewfest",
+	[235440] = "brewfest",
 }
 
 --
