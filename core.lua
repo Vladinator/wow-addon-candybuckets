@@ -85,6 +85,18 @@ local DEBUG_FACTION = false
 local DEBUG_LOCATION = false
 
 --
+-- Chat output
+--
+
+-- Outputs to the chat frame. Takes the same arguments as `format`.
+---@param fmt string
+---@param ... any
+local function Output(fmt, ...)
+	local text = format(fmt, ...)
+	DEFAULT_CHAT_FRAME:AddMessage(text, 1, 1, 0)
+end
+
+--
 -- Session
 --
 
@@ -357,7 +369,7 @@ do
 			if not silent then
 				if not supportedAddonsWarned and supportedAddons ~= "" then
 					supportedAddonsWarned = true
-					DEFAULT_CHAT_FRAME:AddMessage("You need to install one of these supported waypoint addons: " .. supportedAddons, 1, 1, 0)
+					Output("You need to install one of these supported waypoint addons: %s", supportedAddons)
 				end
 			end
 			return false
@@ -365,7 +377,7 @@ do
 		local status, err = pcall(function() return waypoint:func(poi, wholeModule) end)
 		if not status or err ~= true then
 			if not silent then
-				DEFAULT_CHAT_FRAME:AddMessage(format("Unable to set waypoint%s%s", waypoint.standard and "" or format(" using %s", waypoint.name), type(err) == "string" and format(": %s", err) or "."), 1, 1, 0)
+				Output("Unable to set waypoint%s%s", waypoint.standard and "" or format(" using %s", waypoint.name), type(err) == "string" and format(": %s", err) or ".")
 			end
 			return false
 		end
@@ -789,11 +801,11 @@ function addon:CheckCalendar()
 			end
 
 			if ongoing and addon:CanLoadModule(moduleName) then
-				DEFAULT_CHAT_FRAME:AddMessage("|cffFFFFFF" .. addonName .. "|r has loaded the module for |cffFFFFFF" .. event.title .. "|r!", 1, 1, 0)
+				Output("|cffFFFFFF%s|r has loaded the module for |cffFFFFFF%s|r!", addonName, tostring(event.title))
 				addon:LoadModule(moduleName)
 				numLoadedRightNow = numLoadedRightNow + 1
 			elseif not ongoing and addon:CanUnloadModule(moduleName) then
-				DEFAULT_CHAT_FRAME:AddMessage("|cffFFFFFF" .. addonName .. "|r has unloaded the module for |cffFFFFFF" .. event.title .. "|r because the event has ended.", 1, 1, 0)
+				Output("|cffFFFFFF%s|r has unloaded the module for |cffFFFFFF%s|r because the event has ended.", addonName, tostring(event.title))
 				addon:UnloadModule(moduleName)
 			end
 
@@ -806,7 +818,7 @@ function addon:CheckCalendar()
 	if DEBUG_MODULE then
 		for name, module in pairs(ns.modules) do
 			if addon:CanLoadModule(name) then
-				DEFAULT_CHAT_FRAME:AddMessage("|cffFFFFFF" .. addonName .. "|r has loaded the module for |cffFFFFFF[DEBUG] " .. name .. "|r!", 1, 1, 0)
+				Output("|cffFFFFFF%s|r has loaded the module for |cffFFFFFF[DEBUG] %s|r!", addonName, name)
 				addon:LoadModule(name)
 				numLoadedRightNow = numLoadedRightNow + 1
 			end
@@ -816,7 +828,7 @@ function addon:CheckCalendar()
 
 	for name, module in pairs(ns.modules) do
 		if addon:CanUnloadModule(name) and not loadedEvents[name] then
-			DEFAULT_CHAT_FRAME:AddMessage("|cffFFFFFF" .. addonName .. "|r couldn't find |cffFFFFFF" .. name .. "|r in the calendar so we consider the event expired.", 1, 1, 0)
+			Output("|cffFFFFFF%s|r couldn't find |cffFFFFFF%s|r in the calendar so we consider the event expired.", addonName, name)
 			addon:UnloadModule(name)
 		end
 	end
@@ -834,7 +846,7 @@ function addon:CheckCalendar()
 	end
 
 	if numLoadedRightNow > 0 then
-		DEFAULT_CHAT_FRAME:AddMessage("|cffFFFFFF" .. addonName .. "|r has |cffFFFFFF" .. #ns.QUESTS .. "|r locations for you to visit.", 1, 1, 0)
+		Output("|cffFFFFFF%s|r has |cffFFFFFF%d|r locations for you to visit.", addonName, #ns.QUESTS)
 	end
 end
 
@@ -1138,25 +1150,25 @@ function addon:QUEST_TURNED_IN(event, questID)
 
 	local success, info, checkedNumQuestPOIs = addon:IsDeliveryLocationExpected(questID)
 	if DEBUG_LOCATION then
-		DEFAULT_CHAT_FRAME:AddMessage("|cffFFFFFF" .. addonName .. "|r quest |cffFFFFFF" .. questID .. "|r turned in" .. (info and ":" or "."), 1, 1, 0)
+		Output("|cffFFFFFF%s|r quest |cffFFFFFF%d|r turned in%s", addonName, questID, info and ":" or ".")
 		if info then
 			if info.error then
-				DEFAULT_CHAT_FRAME:AddMessage("|cffFF0000Error!|r |cffFFFFFF" .. tostring(info.error) .. "|r", 1, 1, 0)
+				Output("|cffFF0000Error!|r |cffFFFFFF%s|r", info.error)
 			end
 			if info.warning then
-				DEFAULT_CHAT_FRAME:AddMessage("|cffFFFF00Warning!|r |cffFFFFFF" .. tostring(info.warning) .. "|r", 1, 1, 0)
+				Output("|cffFFFF00Warning!|r |cffFFFFFF%s|r", info.warning)
 			end
 			if info.success then
-				DEFAULT_CHAT_FRAME:AddMessage("|cff00FF00Success!|r |cffFFFFFF" .. tostring(info.success) .. "|r", 1, 1, 0)
+				Output("|cff00FF00Success!|r |cffFFFFFF%s|r", info.success)
 			end
 			if info.name then
-				DEFAULT_CHAT_FRAME:AddMessage("|cff00FF00Quest|r: |cffFFFFFF" .. tostring(info.name) .. "|r", 1, 1, 0)
+				Output("|cff00FF00Quest|r: |cffFFFFFF%s|r", info.name)
 			end
 			if info.distance then
-				DEFAULT_CHAT_FRAME:AddMessage("|cff00FF00Distance|r: |cffFFFFFF" .. tostring(info.distance) .. "|r", 1, 1, 0)
+				Output("|cff00FF00Distance|r: |cffFFFFFF%s|r", info.distance)
 			end
 			if info.x and info.y then
-				DEFAULT_CHAT_FRAME:AddMessage(format("|cffFFFFFFmxy|r = |cffFFFFFF%s|r @ |cffFFFFFF%.2f|r, |cffFFFFFF%.2f|r", info.uiMapID and tostring(info.uiMapID) or "?", info.x * 100, info.y * 100), 1, 1, 0)
+				Output("|cffFFFFFFmxy|r = |cffFFFFFF%s|r @ |cffFFFFFF%.2f|r, |cffFFFFFF%.2f|r", info.uiMapID and tostring(info.uiMapID) or "?", info.x * 100, info.y * 100)
 			end
 		end
 	elseif success == false and info then
@@ -1166,7 +1178,7 @@ function addon:QUEST_TURNED_IN(event, questID)
 			local link = addon:CreateAddonCopyLink(entry)
 			suffix = format("%s, then report it to the author.", link)
 		end
-		DEFAULT_CHAT_FRAME:AddMessage(format("|cffFFFFFF%s|r quest |cffFFFFFF%s#%d|r turned in at the wrong location. You were at |cffFFFFFF%d/%d/%.2f/%.2f|r roughly |cffFFFFFF%.2f|r units away from the expected %s. %s Thanks!", addonName, info.quest.module.event, questID, ns.FACTION, info.uiMapID, info.x * 100, info.y * 100, info.distance * 100, checkedNumQuestPOIs and checkedNumQuestPOIs > 1 and checkedNumQuestPOIs .. " locations" or "location", suffix), 1, 1, 0)
+		Output("|cffFFFFFF%s|r quest |cffFFFFFF%s#%d|r turned in at the wrong location. You were at |cffFFFFFF%d/%d/%.2f/%.2f|r roughly |cffFFFFFF%.2f|r units away from the expected %s. %s Thanks!", addonName, info.quest.module.event, questID, ns.FACTION, info.uiMapID, info.x * 100, info.y * 100, info.distance * 100, checkedNumQuestPOIs and checkedNumQuestPOIs > 1 and checkedNumQuestPOIs .. " locations" or "location", suffix)
 	end
 
 	if addon:RemoveQuestPois(questID) then
