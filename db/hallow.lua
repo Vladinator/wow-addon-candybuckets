@@ -7,12 +7,14 @@ ns.modules["hallow"] = {
 	texture = {
 		[1] = "Interface\\Icons\\Achievement_Halloween_Candy_01",
 		[2] = "Interface\\Icons\\Spell_Shadow_Teleport",
-		[3] = "Interface\\Icons\\Achievement_Halloween_Candy_01"
+		[3] = "Interface\\Icons\\Achievement_Halloween_Candy_01",
+		[4] = "Interface\\GossipFrame\\GossipGossipIcon"
 	},
 	title = {
 		[1] = "Candy Bucket",
 		[2] = "Candy Bucket (Phased)",
-		[3] = "Candy Bucket (Requires Reputation)"
+		[3] = "Candy Bucket (Requires Reputation)",
+		[4] = "Zidormi (Change Phase)"
 	},
 	quests = {
 		{ quest = 12349, side = 1, [70] = {66.60, 45.30} },
@@ -42,7 +44,11 @@ ns.modules["hallow"] = {
 		{ quest = 29000, side = 3, [198] = {18.70, 37.30} },
 		{ quest = 29001, side = 3, [198] = {42.70, 45.60} },
 		{ quest = 29016, side = 3, [249] = {26.60, 7.30} },
+		{ quest = 29016, side = 3, extra = 2, [1527] = {26.60, 7.30} },
+		{ quest = 29016, side = 3, extra = 4, style = 2, waypoint = false, [1527] = {56.02, 35.14} },
 		{ quest = 29017, side = 3, [249] = {54.70, 33.00} },
+		{ quest = 29017, side = 3, extra = 2, [1527] = {54.70, 33.00} },
+		{ quest = 29017, side = 3, extra = 4, style = 2, waypoint = false, [1527] = {56.02, 35.14} },
 		{ quest = 32020, side = 2, [418] = {28.25, 50.74} },
 		{ quest = 32022, side = 2, [392] = {58.30, 76.90} },
 		{ quest = 32034, side = 3, [418] = {51.45, 77.33} },
@@ -61,6 +67,8 @@ ns.modules["hallow"] = {
 		{ quest = 12344, side = 1, [47] = {73.90, 44.40} },
 		{ quest = 12351, side = 1, [26] = {14.20, 44.70} },
 		{ quest = 12363, side = 2, [18] = {60.90, 51.50} },
+		{ quest = 12363, side = 2, extra = 2, [2070] = {60.90, 51.50} },
+		{ quest = 12363, side = 2, extra = 4, style = 2, waypoint = false, [2070] = {69.45, 62.80} },
 		{ quest = 12368, side = 2, [90] = {67.70, 37.90} },
 		{ quest = 12371, side = 2, [21] = {46.40, 42.80} },
 		{ quest = 12376, side = 2, [25] = {57.90, 47.30} },
@@ -85,6 +93,8 @@ ns.modules["hallow"] = {
 		{ quest = 28970, side = 1, [26] = {66.20, 44.40} },
 		{ quest = 28971, side = 2, [26] = {31.90, 57.90} },
 		{ quest = 28972, side = 2, [18] = {83.00, 72.00} },
+		{ quest = 28972, side = 2, extra = 2, [2070] = {83.00, 72.00} },
+		{ quest = 28972, side = 2, extra = 4, style = 2, waypoint = false, [2070] = {69.45, 62.80} },
 		{ quest = 28981, side = 3, [201] = {63.40, 60.20} },
 		{ quest = 28982, side = 3, [205] = {49.20, 41.90} },
 		{ quest = 28983, side = 1, [205] = {49.70, 57.40} },

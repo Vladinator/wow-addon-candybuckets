@@ -12,6 +12,8 @@ end
 ---@field public quest number
 ---@field public side number `1` = Alliance, `2` = Horde, `3` = Neutral
 ---@field public extra? number
+---@field public style? number `1` = Circle (Default), `2` = No Border and Plain Icon
+---@field public waypoint? boolean
 ---@field public module? CandyBucketsModule
 
 ---@class CandyBucketsModule
@@ -284,7 +286,7 @@ do
 		funcAll = function(self, module)
 			for i = 1, #ns.QUESTS do
 				local quest = ns.QUESTS[i]
-				if quest.module == module then
+				if quest.module == module and quest.waypoint ~= false then
 					for uiMapID, coords in pairs(quest) do
 						if type(uiMapID) == "number" and type(coords) == "table" then
 							local name = module.title[quest.extra or 1]
@@ -329,7 +331,7 @@ do
 		funcAll = function(self, module)
 			for i = 1, #ns.QUESTS do
 				local quest = ns.QUESTS[i]
-				if quest.module == module then
+				if quest.module == module and quest.waypoint ~= false then
 					for uiMapID, coords in pairs(quest) do
 						if type(uiMapID) == "number" and type(coords) == "table" then
 							if C_Map.CanSetUserWaypointOnMap(uiMapID) then
@@ -484,6 +486,8 @@ end
 -- Pin
 --
 
+local PIN_BORDER_TRANSPARENT = 918860
+
 local PIN_BORDER_COLOR = {
 	[0] = "Interface\\Buttons\\GREYSCALERAMP64",
 	[1] = "Interface\\Buttons\\BLUEGRAD64",
@@ -504,11 +508,25 @@ function CandyBucketsPinMixin:OnLoad()
 	self.HighlightTexture:Hide()
 	self.hasTooltip = true
 	self:EnableMouse(self.hasTooltip)
-	self.Texture:SetMask("Interface\\CharacterFrame\\TempPortraitAlphaMask")
 	self.Texture:ClearAllPoints()
 	self.Texture:SetAllPoints()
-	self.Border:SetMask("Interface\\CharacterFrame\\TempPortraitAlphaMask")
-	self.Border:SetTexture(PIN_BORDER_COLOR[0])
+end
+
+---@param texture number|string
+---@param border number|string
+---@param noBorderPlainIcon? boolean
+function CandyBucketsPinMixin:SetTextureAndBorder(texture, border, noBorderPlainIcon)
+	if noBorderPlainIcon then
+		self.Texture:SetMask("")
+		self.Border:SetMask("")
+		self.Border:Hide()
+	else
+		self.Texture:SetMask("Interface\\CharacterFrame\\TempPortraitAlphaMask")
+		self.Border:SetMask("Interface\\CharacterFrame\\TempPortraitAlphaMask")
+		self.Border:Show()
+	end
+	self.Texture:SetTexture(texture)
+	self.Border:SetTexture(border)
 end
 
 ---@param quest CandyBucketsQuest
@@ -517,8 +535,12 @@ function CandyBucketsPinMixin:OnAcquired(quest, poi)
 	self.quest = quest
 	self:UseFrameLevelType("PIN_FRAME_LEVEL_AREA_POI", self:GetMap():GetNumActivePinsByTemplate("CandyBucketsPinTemplate"))
 	self:SetSize(12, 12)
-	self.Texture:SetTexture(quest.module.texture[quest.extra or 1])
-	self.Border:SetTexture(PIN_BORDER_COLOR[quest.side or 0])
+	local texture = quest.module.texture[quest.extra or 1]
+	if quest.style == 2 then
+		self:SetTextureAndBorder(texture, PIN_BORDER_TRANSPARENT, true)
+	else
+		self:SetTextureAndBorder(texture, PIN_BORDER_COLOR[quest.side or 0])
+	end
 	self.name = quest.module.title[quest.extra or 1]
 	if poi.GetXY then
 		self:SetPosition(poi:GetXY())
