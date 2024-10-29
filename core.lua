@@ -41,8 +41,9 @@ end
 ---@class CandyBucketsWaypointAddOn
 ---@field public name string
 ---@field public standard? boolean
----@field public func fun(self: CandyBucketsWaypointAddOn, poi: CandyBucketsMapPosition, wholeModule?: boolean): boolean
----@field public funcAll fun(self: CandyBucketsWaypointAddOn, module: CandyBucketsModule): boolean
+---@field public func fun(self: CandyBucketsWaypointAddOn, poi: CandyBucketsMapPosition, wholeModule?: boolean): boolean|string
+---@field public funcAll fun(self: CandyBucketsWaypointAddOn, module: CandyBucketsModule): boolean|string
+---@field public funcRemove? fun(self: CandyBucketsWaypointAddOn, questID: number): boolean
 
 ---@class CandyBucketsDataProvider : CandyBucketsMapCanvas
 
@@ -255,15 +256,17 @@ end
 -- ns:AutoWaypoint(poi, wholeModule, silent)
 do
 
-	---@type CandyBucketsWaypointAddOn[]
-	local waypointAddons = {}
+	---@class TomTomWaypointOptionsPolyfill
+	---@field public quest? CandyBucketsQuest
+	---@field public from string
+	---@field public title string
+	---@field public minimap boolean
+	---@field public crazy boolean
 
 	-- TomTom (v80001-1.0.2)
-	table.insert(waypointAddons, {
+	---@type CandyBucketsWaypointAddOn
+	local tomtomWaypointAddon = {
 		name = "TomTom",
-		---@param self CandyBucketsWaypointAddOn
-		---@param poi CandyBucketsMapPosition
-		---@param wholeModule? boolean
 		func = function(self, poi, wholeModule)
 			if wholeModule then
 				self:funcAll(poi.quest.module)
@@ -273,16 +276,18 @@ do
 				local x, y = poi:GetPosition()
 				local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
 				local mapInfo = C_Map.GetMapInfo(childUiMapID)
-				TomTom:AddWaypoint(childUiMapID, childX, childY, {
+				---@type TomTomWaypointOptionsPolyfill
+				local options = {
+					from = addonName,
+					quest = poi.quest,
 					title = string.format("%s (%s, %d)", poi.name, mapInfo.name or ("Map " .. childUiMapID), poi.quest.quest),
 					minimap = true,
 					crazy = true,
-				})
+				}
+				TomTom:AddWaypoint(childUiMapID, childX, childY, options)
 			end
 			return true
 		end,
-		---@param self CandyBucketsWaypointAddOn
-		---@param module CandyBucketsModule
 		funcAll = function(self, module)
 			for i = 1, #ns.QUESTS do
 				local quest = ns.QUESTS[i]
@@ -291,26 +296,50 @@ do
 						if type(uiMapID) == "number" and type(coords) == "table" then
 							local name = module.title[quest.extra or 1]
 							local mapInfo = C_Map.GetMapInfo(uiMapID)
-							TomTom:AddWaypoint(uiMapID, coords[1]/100, coords[2]/100, {
+							---@type TomTomWaypointOptionsPolyfill
+							local options = {
+								from = addonName,
+								quest = quest,
 								title = string.format("%s (%s, %d)", name, mapInfo.name or ("Map " .. uiMapID), quest.quest),
 								minimap = true,
 								crazy = true,
-							})
+							}
+							TomTom:AddWaypoint(uiMapID, coords[1]/100, coords[2]/100, options)
 						end
 					end
 				end
 			end
 			return true
 		end,
-	})
+		funcRemove = function(self, questID)
+			local remove ---@type table<TomTomWaypointOptionsPolyfill, true>?
+			for _, mapWaypoints in pairs(TomTom.waypoints) do
+				for _, mapWaypoint in pairs(mapWaypoints) do
+					---@type TomTomWaypointOptionsPolyfill
+					local waypoint = mapWaypoint
+					if waypoint.from == addonName and type(waypoint.quest) == "table" and waypoint.quest.quest == questID then
+						if not remove then
+							remove = {}
+						end
+						remove[waypoint] = true
+					end
+				end
+			end
+			if not remove then
+				return false
+			end
+			for waypoint, _ in pairs(remove) do
+				TomTom:RemoveWaypoint(waypoint)
+			end
+			return true
+		end,
+	}
 
 	-- C_Map.SetUserWaypoint (9.0.1)
-	table.insert(waypointAddons, {
+	---@type CandyBucketsWaypointAddOn
+	local standardWaypointAddon = {
 		name = "Waypoint",
 		standard = true,
-		---@param self CandyBucketsWaypointAddOn
-		---@param poi CandyBucketsMapPosition
-		---@param wholeModule? boolean
 		func = function(self, poi, wholeModule)
 			if wholeModule then
 				self:funcAll(poi.quest.module)
@@ -326,8 +355,6 @@ do
 			end
 			return true
 		end,
-		---@param self CandyBucketsWaypointAddOn
-		---@param module CandyBucketsModule
 		funcAll = function(self, module)
 			for i = 1, #ns.QUESTS do
 				local quest = ns.QUESTS[i]
@@ -344,7 +371,33 @@ do
 			end
 			return "Can't make a waypoint to any destination."
 		end,
-	})
+		funcRemove = function(self, questID)
+			local waypoint = C_Map.GetUserWaypoint()
+			if not waypoint then
+				return false
+			end
+			for i = 1, #ns.QUESTS do
+				local quest = ns.QUESTS[i]
+				if quest.quest == questID then
+					for uiMapID, coords in pairs(quest) do
+						if type(uiMapID) == "number" and type(coords) == "table" then
+							if waypoint.uiMapID == uiMapID and waypoint.position.x == coords[1] and waypoint.position.y == coords[2] then
+								C_Map.ClearUserWaypoint()
+								return true
+							end
+						end
+					end
+				end
+			end
+			return false
+		end,
+	}
+
+	---@type CandyBucketsWaypointAddOn[]
+	local waypointAddons = {
+		tomtomWaypointAddon,
+		standardWaypointAddon
+	}
 
 	local supportedAddons = {} ---@type string[]
 	local supportedAddonsWarned = false
@@ -381,6 +434,23 @@ do
 			if not silent then
 				Output("Unable to set waypoint%s%s", waypoint.standard and "" or format(" using %s", waypoint.name), type(err) == "string" and format(": %s", err) or ".")
 			end
+			return false
+		end
+		return true
+	end
+
+	---@param questID number
+	---@return boolean success
+	function ns:RemoveQuestWaypoint(questID)
+		local waypoint = ns:GetWaypointAddon()
+		if not waypoint then
+			return false
+		end
+		if not waypoint.funcRemove then
+			return false
+		end
+		local status, err = pcall(function() return waypoint:funcRemove(questID) end)
+		if not status or err ~= true then
 			return false
 		end
 		return true
@@ -1204,6 +1274,7 @@ function addon:QUEST_TURNED_IN(event, questID)
 	end
 
 	if addon:RemoveQuestPois(questID) then
+		ns:RemoveQuestWaypoint(questID)
 		addon:RefreshAllWorldMaps(true)
 	end
 end
