@@ -44,6 +44,7 @@ end
 ---@field public func fun(self: CandyBucketsWaypointAddOn, poi: CandyBucketsMapPosition, wholeModule?: boolean): boolean|string
 ---@field public funcAll fun(self: CandyBucketsWaypointAddOn, module: CandyBucketsModule): boolean|string
 ---@field public funcRemove? fun(self: CandyBucketsWaypointAddOn, questID: number): boolean
+---@field public funcClosest? fun(self: CandyBucketsWaypointAddOn): boolean
 
 ---@class CandyBucketsDataProvider : CandyBucketsMapCanvas
 
@@ -333,6 +334,15 @@ do
 			end
 			return true
 		end,
+		funcClosest = function(self)
+			---@type TomTomWaypointOptionsPolyfill?
+			local waypoint = TomTom:GetClosestWaypoint()
+			if not waypoint then
+				return false
+			end
+			TomTom:SetCrazyArrow(waypoint, TomTom.profile.arrow.arrival, waypoint.title)
+			return true
+		end,
 	}
 
 	-- C_Map.SetUserWaypoint (9.0.1)
@@ -450,6 +460,22 @@ do
 			return false
 		end
 		local status, err = pcall(function() return waypoint:funcRemove(questID) end)
+		if not status or err ~= true then
+			return false
+		end
+		return true
+	end
+
+	---@return boolean success
+	function ns:AutoWaypointClosest()
+		local waypoint = ns:GetWaypointAddon()
+		if not waypoint then
+			return false
+		end
+		if not waypoint.funcClosest then
+			return false
+		end
+		local status, err = pcall(function() return waypoint:funcClosest() end)
 		if not status or err ~= true then
 			return false
 		end
@@ -1274,7 +1300,9 @@ function addon:QUEST_TURNED_IN(event, questID)
 	end
 
 	if addon:RemoveQuestPois(questID) then
-		ns:RemoveQuestWaypoint(questID)
+		if ns:RemoveQuestWaypoint(questID) then
+			ns:AutoWaypointClosest()
+		end
 		addon:RefreshAllWorldMaps(true)
 	end
 end
