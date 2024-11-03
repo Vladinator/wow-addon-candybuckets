@@ -200,6 +200,8 @@ do
 	end
 
 	AddParentChildMapIDs(108, 111) -- Terokkar Forest -> Shattrath City
+	AddParentChildMapIDs(539, 582) -- Shadowmoon Valley -> Lunarfall
+	AddParentChildMapIDs(525, 590) -- Frostfire Ridge -> Frostwall
 	AddParentChildMapIDs(1978, 2151) -- Dragon Isles -> The Forbidden Reach
 	AddParentChildMapIDs(947, 2151) -- Azeroth -> The Forbidden Reach
 
