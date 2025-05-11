@@ -12,5 +12,6 @@ db\brewfest.lua
 db\hallow.lua
 db\lunar.lua
 db\midsummer.lua
+parent_map.lua
 core.lua
 core.xml
