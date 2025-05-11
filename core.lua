@@ -113,7 +113,7 @@ ns.COMPLETED_QUESTS = setmetatable({}, {
 	__index = function(self, questID)
 		local isCompleted = C_QuestLog.IsQuestFlaggedCompleted(questID)
 		if isCompleted then
-			rawset(self, questID, isCompleted)
+			self[questID] = isCompleted
 		end
 		return isCompleted
 	end
@@ -1151,10 +1151,6 @@ function addon:PLAYER_LOGIN(event)
 		ns.FACTION = 2
 	else
 		ns.FACTION = 3
-	end
-
-	for _, id in ipairs(C_QuestLog.GetAllCompletedQuestIDs()) do
-		ns.COMPLETED_QUESTS[id] = true
 	end
 
 	addon:QueryCalendar(true)
