@@ -29,12 +29,23 @@ function MakeParentMap()
 		[2274] = true, -- Khaz Algar
 	}
 	local seen = {}
+	local siblings = {}
 
 	local currentParent = next(queue)
 	local noFilter = nil
 	local recursive = true
+	local nonRecursive = false
 	while currentParent do
 		if not PARENT_MAP[currentParent] then PARENT_MAP[currentParent] = { [currentParent] = true } end
+
+		local children = GetMapChildrenInfo(currentParent, noFilter, nonRecursive)
+		for idx = 1, #children do
+			local child = children[idx]
+			local mapID = child.mapID
+			if not siblings[currentParent] then siblings[currentParent] = {} end
+			siblings[currentParent][mapID] = true
+		end
+
 		local children = GetMapChildrenInfo(currentParent, noFilter, recursive)
 		for idx = 1, #children do
 			local child = children[idx]
@@ -49,6 +60,14 @@ function MakeParentMap()
 
 		queue[currentParent] = nil
 		currentParent = next(queue)
+	end
+
+	for parentMapID, children in pairs(siblings) do
+		for child1 in pairs(children) do
+			for child2 in pairs(children) do
+				PARENT_MAP[child1][child2] = true
+			end
+		end
 	end
 
 	PARENT_MAP[108][111] = true -- Terokkar Forest -> Shattrath City
