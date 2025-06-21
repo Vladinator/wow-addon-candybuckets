@@ -269,6 +269,10 @@ ns.modules["midsummer"] = {
 		{ quest = 75650, side = 3, extra = 3, [2023] = {88.25, 28.85} },
 		{ quest = 75650, side = 3, extra = 3, [2023] = {36.27, 59.01} },
 		{ quest = 75650, side = 3, extra = 3, [2024] = {18.91, 22.87} },
+		{ quest = 87342, side = 3, extra = 2, [2339] = {48.27, 51.50} },
+		{ quest = 87355, side = 3, extra = 2, [2215] = {42.42, 51.59} },
+		{ quest = 87356, side = 3, extra = 2, [2255] = {55.53, 43.36} },
+		{ quest = 87357, side = 3, extra = 2, [2214] = {43.65, 32.73} },
 	},
 	patterns = {
 		"^%s*[Hh][Oo][Nn][Oo][Rr]%s+[Tt][Hh][Ee]%s+[Ff][Ll][Aa][Mm][Ee]%s*$",
