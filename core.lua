@@ -347,6 +347,53 @@ do
 		end,
 	}
 
+	-- MapPinEnhanced (v3.0.12)
+	---@type CandyBucketsWaypointAddOn
+	local mpeWaypointAddon = {
+		name = "MapPinEnhanced",
+		func = function(self, poi, wholeModule)
+			if wholeModule then
+				self:funcAll(poi.quest.module)
+			else
+				local uiMapID = poi:GetMap():GetMapID()
+				local x, y = poi:GetPosition()
+				local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
+				local mapInfo = C_Map.GetMapInfo(childUiMapID)
+
+				MapPinEnhanced:AddPin({
+					mapID = childUiMapID,
+					x = childX,
+					y = childY,
+					title = string.format("%s (%s, %d)", poi.name, mapInfo.name or ("Map " .. childUiMapID), poi.quest.quest),
+					setTracked = true,
+				})
+			end
+			return true
+		end,
+		funcAll = function(self, module)
+			for i = 1, #ns.QUESTS do
+				local quest = ns.QUESTS[i]
+				if quest.module == module and quest.waypoint ~= false then
+					for uiMapID, coords in pairs(quest) do
+						if type(uiMapID) == "number" and type(coords) == "table" then
+							local name = module.title[quest.extra or 1]
+							local mapInfo = C_Map.GetMapInfo(uiMapID)
+
+							MapPinEnhanced:AddPin({
+								mapID = uiMapID,
+								x = coords[1]/100,
+								y = coords[2]/100,
+								title = string.format("%s (%s, %d)", name, mapInfo.name or ("Map " .. uiMapID), quest.quest),
+								setTracked = true,
+							})
+						end
+					end
+				end
+			end
+			return true
+		end,
+	}
+
 	-- C_Map.SetUserWaypoint (9.0.1)
 	---@type CandyBucketsWaypointAddOn
 	local standardWaypointAddon = {
@@ -408,6 +455,7 @@ do
 	---@type CandyBucketsWaypointAddOn[]
 	local waypointAddons = {
 		tomtomWaypointAddon,
+		mpeWaypointAddon,
 		standardWaypointAddon
 	}
 
