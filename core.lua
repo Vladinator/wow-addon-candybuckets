@@ -6,7 +6,6 @@ end
 
 ---@class CandyBucketsNS : table
 ---@field public modules table<CandyBucketsModuleName, CandyBucketsModule>
----@field public uimaps table<number, UiMapDetails[]>
 
 ---@class CandyBucketsQuest : table
 ---@field public quest number
@@ -113,7 +112,7 @@ ns.COMPLETED_QUESTS = setmetatable({}, {
 	__index = function(self, questID)
 		local isCompleted = C_QuestLog.IsQuestFlaggedCompleted(questID)
 		if isCompleted then
-			rawset(self, questID, isCompleted)
+			self[questID] = isCompleted
 		end
 		return isCompleted
 	end
@@ -126,13 +125,17 @@ ns.COMPLETED_QUESTS = setmetatable({}, {
 ns.PARENT_MAP = {} ---@type table<number, table<number, boolean>>
 do
 
+	-- TODO: PR #39
+
 	---@param uiParentMapID number
 	---@param uiChildMapID number
 	local function AddParentChildMapIDs(uiParentMapID, uiChildMapID)
-		if not ns.PARENT_MAP[uiParentMapID] then
-			ns.PARENT_MAP[uiParentMapID] = { [uiParentMapID] = true }
+		local temp = ns.PARENT_MAP[uiParentMapID]
+		if not temp then
+			temp = { [uiParentMapID] = true }
+			ns.PARENT_MAP[uiParentMapID] = temp
 		end
-		ns.PARENT_MAP[uiParentMapID][uiChildMapID] = true
+		temp[uiChildMapID] = true
 	end
 
 	---@param uiMapID number
@@ -167,11 +170,6 @@ do
 		return C_Map.GetMapChildrenInfo(uiMapID, nil, true) -- Enum.UIMapType.Zone
 	end
 
-	---@return UiMapDetails[]?
-	local function GetChildrenNS(uiMapID)
-		return ns.uimaps and type(ns.uimaps) == "table" and ns.uimaps[uiMapID] ---@diagnostic disable-line: return-type-mismatch
-	end
-
 	for _, uiMapID in ipairs({
 		12, -- Kalimdor
 		13, -- Eastern Kingdoms
@@ -196,7 +194,6 @@ do
 		2274, -- Khaz Algar
 	}) do
 		CheckMapRecursively(uiMapID, GetChildren, 10)
-		CheckMapRecursively(uiMapID, GetChildrenNS, 10)
 	end
 
 	AddParentChildMapIDs(108, 111) -- Terokkar Forest -> Shattrath City
@@ -1306,10 +1303,6 @@ function addon:PLAYER_LOGIN(event)
 		ns.FACTION = 2
 	else
 		ns.FACTION = 3
-	end
-
-	for _, id in ipairs(C_QuestLog.GetAllCompletedQuestIDs()) do
-		ns.COMPLETED_QUESTS[id] = true
 	end
 
 	addon:QueryCalendar(true)
