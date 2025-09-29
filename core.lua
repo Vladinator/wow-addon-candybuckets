@@ -266,32 +266,45 @@ do
 	---@field public minimap boolean
 	---@field public crazy boolean
 
-	-- TomTom (v80001-1.0.2)
+	---@class TomTomWaypointPolyfill
+	---@field public profile { arrow: { arrival: number } }
+	---@field public waypoints table<string, table<string, TomTomWaypointOptionsPolyfill>>
+	---@field public AddWaypoint fun(self: TomTomWaypointPolyfill, mapID: number, x: number, y: number, options?: TomTomWaypointOptionsPolyfill)
+	---@field public RemoveWaypoint fun(self: TomTomWaypointPolyfill, options: TomTomWaypointOptionsPolyfill)
+	---@field public SetClosestWaypoint fun(self: TomTomWaypointPolyfill)
+	---@field public GetClosestWaypoint fun(self: TomTomWaypointPolyfill): TomTomWaypointOptionsPolyfill?
+	---@field public SetCrazyArrow fun(self: TomTomWaypointPolyfill, options: TomTomWaypointOptionsPolyfill, arrival: number, title: string)
+
+	-- TomTom (v4.0.17)
 	---@type CandyBucketsWaypointAddOn
 	local tomtomWaypointAddon = {
 		name = "TomTom",
 		func = function(self, poi, wholeModule)
+			---@type TomTomWaypointPolyfill
+			local TomTom = TomTom ---@diagnostic disable-line: undefined-global
 			if wholeModule then
 				self:funcAll(poi.quest.module)
 				TomTom:SetClosestWaypoint()
-			else
-				local uiMapID = poi:GetMap():GetMapID()
-				local x, y = poi:GetPosition()
-				local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
-				local mapInfo = C_Map.GetMapInfo(childUiMapID)
-				---@type TomTomWaypointOptionsPolyfill
-				local options = {
-					from = addonName,
-					quest = poi.quest,
-					title = string.format("%s (%s, %d)", poi.name, mapInfo.name or ("Map " .. childUiMapID), poi.quest.quest),
-					minimap = true,
-					crazy = true,
-				}
-				TomTom:AddWaypoint(childUiMapID, childX, childY, options)
+				return true
 			end
+			local uiMapID = poi:GetMap():GetMapID()
+			local x, y = poi:GetPosition()
+			local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
+			local mapInfo = C_Map.GetMapInfo(childUiMapID)
+			---@type TomTomWaypointOptionsPolyfill
+			local options = {
+				from = addonName,
+				quest = poi.quest,
+				title = format("%s (%s, %d)", poi.name, mapInfo.name or ("Map " .. childUiMapID), poi.quest.quest),
+				minimap = true,
+				crazy = true,
+			}
+			TomTom:AddWaypoint(childUiMapID, childX, childY, options)
 			return true
 		end,
 		funcAll = function(self, module)
+			---@type TomTomWaypointPolyfill
+			local TomTom = TomTom ---@diagnostic disable-line: undefined-global
 			for i = 1, #ns.QUESTS do
 				local quest = ns.QUESTS[i]
 				if quest.module == module and quest.waypoint ~= false then
@@ -303,7 +316,7 @@ do
 							local options = {
 								from = addonName,
 								quest = quest,
-								title = string.format("%s (%s, %d)", name, mapInfo.name or ("Map " .. uiMapID), quest.quest),
+								title = format("%s (%s, %d)", name, mapInfo.name or ("Map " .. uiMapID), quest.quest),
 								minimap = true,
 								crazy = true,
 							}
@@ -315,11 +328,11 @@ do
 			return true
 		end,
 		funcRemove = function(self, questID)
+			---@type TomTomWaypointPolyfill
+			local TomTom = TomTom ---@diagnostic disable-line: undefined-global
 			local remove ---@type table<TomTomWaypointOptionsPolyfill, true>?
 			for _, mapWaypoints in pairs(TomTom.waypoints) do
-				for _, mapWaypoint in pairs(mapWaypoints) do
-					---@type TomTomWaypointOptionsPolyfill
-					local waypoint = mapWaypoint
+				for _, waypoint in pairs(mapWaypoints) do
 					if waypoint.from == addonName and type(waypoint.quest) == "table" and waypoint.quest.quest == questID then
 						if not remove then
 							remove = {}
@@ -337,7 +350,8 @@ do
 			return true
 		end,
 		funcClosest = function(self)
-			---@type TomTomWaypointOptionsPolyfill?
+			---@type TomTomWaypointPolyfill
+			local TomTom = TomTom ---@diagnostic disable-line: undefined-global
 			local waypoint = TomTom:GetClosestWaypoint()
 			if not waypoint then
 				return false
@@ -347,6 +361,16 @@ do
 		end,
 	}
 
+	---@class MapPinEnhancedOptionsPolyfill
+	---@field public mapID number
+	---@field public x number
+	---@field public y number
+	---@field public title string
+	---@field public setTracked? boolean
+
+	---@class MapPinEnhancedPolyfill
+	---@field public AddPin fun(self: MapPinEnhancedPolyfill, options: MapPinEnhancedOptionsPolyfill)
+
 	-- MapPinEnhanced (v3.0.12)
 	---@type CandyBucketsWaypointAddOn
 	local mpeWaypointAddon = {
@@ -354,23 +378,26 @@ do
 		func = function(self, poi, wholeModule)
 			if wholeModule then
 				self:funcAll(poi.quest.module)
-			else
-				local uiMapID = poi:GetMap():GetMapID()
-				local x, y = poi:GetPosition()
-				local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
-				local mapInfo = C_Map.GetMapInfo(childUiMapID)
-
-				MapPinEnhanced:AddPin({
-					mapID = childUiMapID,
-					x = childX,
-					y = childY,
-					title = string.format("%s (%s, %d)", poi.name, mapInfo.name or ("Map " .. childUiMapID), poi.quest.quest),
-					setTracked = true,
-				})
+				return true
 			end
+			---@type MapPinEnhancedPolyfill
+			local MapPinEnhanced = MapPinEnhanced ---@diagnostic disable-line: undefined-global
+			local uiMapID = poi:GetMap():GetMapID()
+			local x, y = poi:GetPosition()
+			local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
+			local mapInfo = C_Map.GetMapInfo(childUiMapID)
+			MapPinEnhanced:AddPin({
+				mapID = childUiMapID,
+				x = childX,
+				y = childY,
+				title = format("%s (%s, %d)", poi.name, mapInfo.name or ("Map " .. childUiMapID), poi.quest.quest),
+				setTracked = true,
+			})
 			return true
 		end,
 		funcAll = function(self, module)
+			---@type MapPinEnhancedPolyfill
+			local MapPinEnhanced = MapPinEnhanced ---@diagnostic disable-line: undefined-global
 			for i = 1, #ns.QUESTS do
 				local quest = ns.QUESTS[i]
 				if quest.module == module and quest.waypoint ~= false then
@@ -378,12 +405,11 @@ do
 						if type(uiMapID) == "number" and type(coords) == "table" then
 							local name = module.title[quest.extra or 1]
 							local mapInfo = C_Map.GetMapInfo(uiMapID)
-
 							MapPinEnhanced:AddPin({
 								mapID = uiMapID,
 								x = coords[1]/100,
 								y = coords[2]/100,
-								title = string.format("%s (%s, %d)", name, mapInfo.name or ("Map " .. uiMapID), quest.quest),
+								title = format("%s (%s, %d)", name, mapInfo.name or ("Map " .. uiMapID), quest.quest),
 								setTracked = true,
 							})
 						end
@@ -402,16 +428,16 @@ do
 		func = function(self, poi, wholeModule)
 			if wholeModule then
 				self:funcAll(poi.quest.module)
-			else
-				local uiMapID = poi:GetMap():GetMapID()
-				local x, y = poi:GetPosition()
-				local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
-				local mapInfo = C_Map.GetMapInfo(childUiMapID)
-				if not C_Map.CanSetUserWaypointOnMap(childUiMapID) then
-					return format("Can't make a waypoint to %s. Enter the continent then try again.", mapInfo.name)
-				end
-				C_Map.SetUserWaypoint({ uiMapID = childUiMapID, position = { x = childX, y = childY } })
+				return true
 			end
+			local uiMapID = poi:GetMap():GetMapID()
+			local x, y = poi:GetPosition()
+			local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
+			local mapInfo = C_Map.GetMapInfo(childUiMapID)
+			if not C_Map.CanSetUserWaypointOnMap(childUiMapID) then
+				return format("Can't make a waypoint to %s. Enter the continent then try again.", mapInfo.name)
+			end
+			C_Map.SetUserWaypoint({ uiMapID = childUiMapID, position = { x = childX, y = childY } })
 			return true
 		end,
 		funcAll = function(self, module)
@@ -566,7 +592,7 @@ function CandyBucketsDataProviderMixin:RefreshAllData(fromOnShow)
 	local map = self:GetMap()
 	local uiMapID = map:GetMapID()
 	local childUiMapIDs = ns.PARENT_MAP[uiMapID]
-	local tempVector = {} ---@type Vector2DMixin
+	local tempVector = { x = 0, y = 0 } ---@type Vector2DMixin
 	local questPOIs ---@type table<CandyBucketsQuest, Vector2DMixin>?
 
 	if IsModifierKeyDown() then
@@ -699,7 +725,7 @@ function CandyBucketsPinMixin:OnAcquired(quest, poi)
 		local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
 		local mapInfo = C_Map.GetMapInfo(childUiMapID)
 		if mapInfo and mapInfo.name and childX and childY then
-			self.description = string.format("%s (%.2f, %.2f)", mapInfo.name, childX * 100, childY * 100)
+			self.description = format("%s (%.2f, %.2f)", mapInfo.name, childX * 100, childY * 100)
 		end
 	end
 end
@@ -782,9 +808,9 @@ function CandyBucketsStatsMixin:OnAcquired(questPOIs)
 				local mapInfo = C_Map.GetMapInfo(childUiMapID)
 				i = i + 1
 				if mapInfo and mapInfo.name then
-					text[i] = string.format("%s (%.2f, %.2f)", mapInfo.name, childX * 100, childY * 100)
+					text[i] = format("%s (%.2f, %.2f)", mapInfo.name, childX * 100, childY * 100)
 				else
-					text[i] = string.format("#%d", quest.quest)
+					text[i] = format("#%d", quest.quest)
 				end
 			end
 		end
