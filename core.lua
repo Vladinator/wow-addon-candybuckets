@@ -113,7 +113,7 @@ ns.COMPLETED_QUESTS = setmetatable({}, {
 	__index = function(self, questID)
 		local isCompleted = C_QuestLog.IsQuestFlaggedCompleted(questID)
 		if isCompleted then
-			rawset(self, questID, isCompleted)
+			self[questID] = isCompleted
 		end
 		return isCompleted
 	end
@@ -123,89 +123,8 @@ ns.COMPLETED_QUESTS = setmetatable({}, {
 -- Map
 --
 
-ns.PARENT_MAP = {} ---@type table<number, table<number, boolean>>
-do
-
-	---@param uiParentMapID number
-	---@param uiChildMapID number
-	local function AddParentChildMapIDs(uiParentMapID, uiChildMapID)
-		if not ns.PARENT_MAP[uiParentMapID] then
-			ns.PARENT_MAP[uiParentMapID] = { [uiParentMapID] = true }
-		end
-		ns.PARENT_MAP[uiParentMapID][uiChildMapID] = true
-	end
-
-	---@param uiMapID number
-	---@param getChildren fun(uiMapID: number): UiMapDetails[]?
-	---@param depthRemaining number
-	---@param uiParentMapIDs? table<number, boolean>
-	local function CheckMapRecursively(uiMapID, getChildren, depthRemaining, uiParentMapIDs)
-		if not uiMapID or not getChildren then return end
-		if not depthRemaining then depthRemaining = 1 end
-		if depthRemaining < 1 then return end
-		if not uiParentMapIDs then uiParentMapIDs = {} end
-		for uiParentMapID, _ in pairs(uiParentMapIDs) do
-			AddParentChildMapIDs(uiParentMapID, uiMapID)
-		end
-		uiParentMapIDs[uiMapID] = true
-		local children = getChildren(uiMapID)
-		if children and type(children) == "table" then
-			for _, uiChildMapID in pairs(children) do
-				if type(uiChildMapID) == "table" then
-					uiChildMapID = uiChildMapID.mapID ---@diagnostic disable-line: cast-local-type
-				end
-				if type(uiChildMapID) == "number" then
-					AddParentChildMapIDs(uiMapID, uiChildMapID)
-					CheckMapRecursively(uiChildMapID, getChildren, depthRemaining - 1, uiParentMapIDs)
-				end
-			end
-		end
-	end
-
-	---@return UiMapDetails[]?
-	local function GetChildren(uiMapID)
-		return C_Map.GetMapChildrenInfo(uiMapID, nil, true) -- Enum.UIMapType.Zone
-	end
-
-	---@return UiMapDetails[]?
-	local function GetChildrenNS(uiMapID)
-		return ns.uimaps and type(ns.uimaps) == "table" and ns.uimaps[uiMapID] ---@diagnostic disable-line: return-type-mismatch
-	end
-
-	for _, uiMapID in ipairs({
-		12, -- Kalimdor
-		13, -- Eastern Kingdoms
-		101, -- Outland
-		113, -- Northrend
-		127, -- Crystalsong Forest
-		203, -- Vashj'ir
-		224, -- Stranglethorn Vale
-		390, -- Vale of Eternal Blossoms
-		424, -- Pandaria
-		572, -- Draenor
-		619, -- Broken Isles
-		862, -- Zuldazar
-		875, -- Zandalar
-		876, -- Kul Tiras
-		895, -- Tiragarde Sound
-		947, -- Azeroth (CPU hog, but it's not too bad?)
-		948, -- The Maelstrom
-		1165, -- Dazar'alor
-		1550, -- The Shadowlands
-		1978, -- Dragon Isles
-		2274, -- Khaz Algar
-	}) do
-		CheckMapRecursively(uiMapID, GetChildren, 10)
-		CheckMapRecursively(uiMapID, GetChildrenNS, 10)
-	end
-
-	AddParentChildMapIDs(108, 111) -- Terokkar Forest -> Shattrath City
-	AddParentChildMapIDs(539, 582) -- Shadowmoon Valley -> Lunarfall
-	AddParentChildMapIDs(525, 590) -- Frostfire Ridge -> Frostwall
-	AddParentChildMapIDs(1978, 2151) -- Dragon Isles -> The Forbidden Reach
-	AddParentChildMapIDs(947, 2151) -- Azeroth -> The Forbidden Reach
-
-end
+ns.PARENT_MAP = ns.PARENT_MAP ---@type table<number, table<number, boolean>>
+-- filled in parent_map.lua
 
 ---@param uiMapID number
 ---@param x number
@@ -1306,10 +1225,6 @@ function addon:PLAYER_LOGIN(event)
 		ns.FACTION = 2
 	else
 		ns.FACTION = 3
-	end
-
-	for _, id in ipairs(C_QuestLog.GetAllCompletedQuestIDs()) do
-		ns.COMPLETED_QUESTS[id] = true
 	end
 
 	addon:QueryCalendar(true)
