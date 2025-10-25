@@ -1,6 +1,6 @@
-if WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE then
-	return
-end
+-- if WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE then
+-- 	return
+-- end
 
 ---@alias CandyBucketsModuleName "brewfest"|"hallow"|"lunar"|"midsummer"
 
@@ -40,6 +40,7 @@ end
 ---@class CandyBucketsWaypointAddOn
 ---@field public name string
 ---@field public standard? boolean
+---@field public canUse? fun(self: CandyBucketsWaypointAddOn): boolean
 ---@field public func fun(self: CandyBucketsWaypointAddOn, poi: CandyBucketsMapPosition, wholeModule?: boolean): boolean|string
 ---@field public funcAll fun(self: CandyBucketsWaypointAddOn, module: CandyBucketsModule): boolean|string
 ---@field public funcRemove? fun(self: CandyBucketsWaypointAddOn, questID: number): boolean
@@ -422,6 +423,9 @@ do
 	local standardWaypointAddon = {
 		name = "Waypoint",
 		standard = true,
+		canUse = function(self)
+			return WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
+		end,
 		func = function(self, poi, wholeModule)
 			if wholeModule then
 				self:funcAll(poi.quest.module)
@@ -484,7 +488,7 @@ do
 
 	local supportedAddons = {} ---@type string[]
 	local supportedAddonsWarned = false
-	for k, v in ipairs(waypointAddons) do supportedAddons[k] = v.name end
+	for k, v in ipairs(waypointAddons) do if not v.standard then supportedAddons[k] = v.name end end
 	supportedAddons = table.concat(supportedAddons, " ") ---@diagnostic disable-line: cast-local-type
 
 	---@return CandyBucketsWaypointAddOn? waypoint
@@ -492,7 +496,9 @@ do
 		for i = 1, #waypointAddons do
 			local waypoint = waypointAddons[i]
 			if waypoint.standard or C_AddOns.IsAddOnLoaded(waypoint.name) then
-				return waypoint
+				if not waypoint.canUse or waypoint:canUse() then
+					return waypoint
+				end
 			end
 		end
 	end
@@ -1150,7 +1156,10 @@ function addon:IsDeliveryLocationExpected(questID)
 					distance = sqrt(dd)
 				end
 
-				local mapWidth, mapHeight = C_Map.GetMapWorldSize(uiMapID)
+				local mapWidth, mapHeight = 0, 0
+				if C_Map.GetMapWorldSize then
+					mapWidth, mapHeight = C_Map.GetMapWorldSize(uiMapID)
+				end
 				local mapSize = min(mapWidth, mapHeight)
 				local mapScale = mapSize > 0 and 100/mapSize or 0
 				local warnDistanceForMap = mapScale > 0 and mapScale or 0.05 -- we convert the actual map size into the same scale as we use for the distance - fallback to 0.05 if we're missing data
@@ -1358,7 +1367,7 @@ function addon:QUEST_TURNED_IN(event, questID)
 				Output("|cffFFFFFFmxy|r = |cffFFFFFF%s|r @ |cffFFFFFF%.2f|r, |cffFFFFFF%.2f|r", info.uiMapID and tostring(info.uiMapID) or "?", info.x * 100, info.y * 100)
 			end
 		end
-	elseif success == false and info then
+	elseif success == false and info and info.distance and info.distance > 0 and info.distance < 1 then
 		local suffix = "Please screenshot this message and report it to the author."
 		if addon:CanUseAddonLinks() then
 			local entry = format("{ quest = %d, side = %d, [%d] = {%.2f, %.2f} }, -- %.2f, %s", questID, ns.FACTION, info.uiMapID, info.x * 100, info.y * 100, info.distance * 100, GetMinimapZoneText() or "N/A")
