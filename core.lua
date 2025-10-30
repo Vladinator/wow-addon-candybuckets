@@ -205,6 +205,25 @@ do
 
 end
 
+---@type table<number, number>
+ns.PARENT_MAP_TAXI = setmetatable({}, {
+	__index = function (self, uiMapID)
+		local mapInfo = C_Map.GetMapInfo(uiMapID)
+		for uiParentMapID, childUiMapIDs in pairs(ns.PARENT_MAP) do
+			for childUiMapID, _ in pairs(childUiMapIDs) do
+				local childMapInfo = C_Map.GetMapInfo(childUiMapID)
+				if mapInfo.mapType == childMapInfo.mapType and mapInfo.name == childMapInfo.name then
+					uiMapID = childMapInfo.mapID
+					self[uiMapID] = uiMapID
+					return uiMapID
+				end
+			end
+		end
+		self[uiMapID] = uiMapID
+		return uiMapID
+	end,
+})
+
 ---@param uiMapID number
 ---@param x number
 ---@param y number
@@ -293,7 +312,7 @@ do
 			local options = {
 				from = addonName,
 				quest = poi.quest,
-				title = format("%s (%s, %d)", poi.name, mapInfo.name or ("Map " .. childUiMapID), poi.quest.quest),
+				title = format("%s (%s, %d)", poi.name, mapInfo.name or format("Map %d", childUiMapID), poi.quest.quest),
 				minimap = true,
 				crazy = true,
 			}
@@ -314,7 +333,7 @@ do
 							local options = {
 								from = addonName,
 								quest = quest,
-								title = format("%s (%s, %d)", name, mapInfo.name or ("Map " .. uiMapID), quest.quest),
+								title = format("%s (%s, %d)", name, mapInfo.name or format("Map %d", uiMapID), quest.quest),
 								minimap = true,
 								crazy = true,
 							}
@@ -388,7 +407,7 @@ do
 				mapID = childUiMapID,
 				x = childX,
 				y = childY,
-				title = format("%s (%s, %d)", poi.name, mapInfo.name or ("Map " .. childUiMapID), poi.quest.quest),
+				title = format("%s (%s, %d)", poi.name, mapInfo.name or format("Map %d", childUiMapID), poi.quest.quest),
 				setTracked = true,
 			})
 			return true
@@ -407,7 +426,7 @@ do
 								mapID = uiMapID,
 								x = coords[1]/100,
 								y = coords[2]/100,
-								title = format("%s (%s, %d)", name, mapInfo.name or ("Map " .. uiMapID), quest.quest),
+								title = format("%s (%s, %d)", name, mapInfo.name or format("Map %d", uiMapID), quest.quest),
 								setTracked = true,
 							})
 						end
@@ -598,6 +617,12 @@ function CandyBucketsDataProviderMixin:RefreshAllData(fromOnShow)
 	local tempVector = { x = 0, y = 0 } ---@type Vector2DMixin
 	local questPOIs ---@type table<CandyBucketsQuest, Vector2DMixin>?
 
+	local isTaxiMap = map:GetName() == "FlightMapFrame"
+	if isTaxiMap then
+		uiMapID = ns.PARENT_MAP_TAXI[uiMapID]
+		childUiMapIDs = ns.PARENT_MAP[uiMapID]
+	end
+
 	if IsModifierKeyDown() then
 		questPOIs = {}
 	end
@@ -615,7 +640,7 @@ function CandyBucketsDataProviderMixin:RefreshAllData(fromOnShow)
 				poi = quest[childUiMapID] ---@type Vector2DMixin?
 
 				if poi then
-					local translateKey = uiMapID .. "," .. childUiMapID
+					local translateKey = format("%s,%s", uiMapID, childUiMapID)
 
 					if poi[translateKey] ~= nil then
 						poi = poi[translateKey]
@@ -708,7 +733,8 @@ end
 ---@param poi Vector2DMixin
 function CandyBucketsPinMixin:OnAcquired(quest, poi)
 	self.quest = quest
-	self:UseFrameLevelType("PIN_FRAME_LEVEL_AREA_POI", self:GetMap():GetNumActivePinsByTemplate("CandyBucketsPinTemplate"))
+	local map = self:GetMap()
+	self:UseFrameLevelType("PIN_FRAME_LEVEL_CANDY_BUCKET_ICON", map:GetNumActivePinsByTemplate("CandyBucketsPinTemplate"))
 	self:SetSize(12, 12)
 	local texture = quest.module.texture[quest.extra or 1]
 	if quest.style == 2 then
@@ -722,7 +748,7 @@ function CandyBucketsPinMixin:OnAcquired(quest, poi)
 	else
 		self:SetPosition(poi[1]/100, poi[2]/100)
 	end
-	local uiMapID = self:GetMap():GetMapID()
+	local uiMapID = map:GetMapID()
 	if uiMapID then
 		local x, y = self:GetPosition()
 		local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
@@ -747,7 +773,7 @@ function CandyBucketsPinMixin:OnMouseEnter()
 	if self.description and self.description ~= "" then
 		GameTooltip_AddNormalLine(GameTooltip, self.description, true)
 	end
-	GameTooltip_AddNormalLine(GameTooltip, "Quest ID: " .. self.quest.quest, false)
+	GameTooltip_AddNormalLine(GameTooltip, format("Quest ID: %s", self.quest.quest), false)
 	if ns:GetWaypointAddon() then
 		GameTooltip_AddNormalLine(GameTooltip, "<Click to show waypoint.>", false)
 	end
@@ -787,7 +813,7 @@ end
 ---@param questPOIs table<CandyBucketsQuest, Vector2DMixin>
 function CandyBucketsStatsMixin:OnAcquired(questPOIs)
 	local map = self:GetMap()
-	self:UseFrameLevelType("PIN_FRAME_LEVEL_AREA_POI", map:GetNumActivePinsByTemplate("CandyBucketsStatsTemplate"))
+	self:UseFrameLevelType("PIN_FRAME_LEVEL_CANDY_BUCKET_STATS", map:GetNumActivePinsByTemplate("CandyBucketsStatsTemplate"))
 	self:SetSize(map:GetSize())
 	self:SetPosition(.5, .5)
 	--self:ClearAllPoints()
@@ -880,16 +906,32 @@ addon:SetScript("OnEvent", function(addon, event, ...) addon[event](addon, event
 addon:RegisterEvent("ADDON_LOADED")
 addon:RegisterEvent("PLAYER_LOGIN")
 
-local InjectDataProvider do
-	local function WorldMapMixin_OnLoad(self)
+---@type fun(): boolean
+local InjectDataProviders do
+	local loadedWorldMap = false
+	local loadedFlightMap = false
+
+	local function OnLoad(self)
 		local dataProvider = CreateFromMixins(CandyBucketsDataProviderMixin)
 		ns.PROVIDERS[dataProvider] = true
 		self:AddDataProvider(dataProvider)
+		local pinFrameLevelsManager = self:GetPinFrameLevelsManager()
+		pinFrameLevelsManager:AddFrameLevel("PIN_FRAME_LEVEL_CANDY_BUCKET_ICON", 500)
+		pinFrameLevelsManager:AddFrameLevel("PIN_FRAME_LEVEL_CANDY_BUCKET_STATS")
 	end
 
-	function InjectDataProvider()
-		hooksecurefunc(WorldMapMixin, "OnLoad", WorldMapMixin_OnLoad)
-		WorldMapMixin_OnLoad(WorldMapFrame)
+	function InjectDataProviders()
+		if WorldMapFrame and not loadedWorldMap then
+			loadedWorldMap = true
+			hooksecurefunc(WorldMapMixin, "OnLoad", OnLoad)
+			OnLoad(WorldMapFrame)
+		end
+		if FlightMapFrame and not loadedFlightMap then
+			loadedFlightMap = true
+			hooksecurefunc(FlightMapMixin, "OnLoad", OnLoad)
+			OnLoad(FlightMapFrame)
+		end
+		return loadedWorldMap and loadedFlightMap
 	end
 end
 
@@ -1119,7 +1161,7 @@ function addon:IsDeliveryLocationExpected(questID)
 	if not uiMapID then
 		return nil, DEBUG_LOCATION and { error = "Player has no uiMapID." } or nil, nil
 	elseif not pos then
-		return nil, DEBUG_LOCATION and { error = "Player is on map " .. uiMapID .. " but not coordinates." } or nil, nil
+		return nil, DEBUG_LOCATION and { error = format("Player is on map %d but not coordinates.", uiMapID) } or nil, nil
 	end
 
 	if questCollection[1].missing then
@@ -1295,10 +1337,9 @@ end
 -- Events
 --
 
-function addon:ADDON_LOADED(event, name)
-	if name == addonName then
+function addon:ADDON_LOADED(event)
+	if InjectDataProviders() then
 		addon:UnregisterEvent(event)
-		InjectDataProvider()
 	end
 end
 
@@ -1374,7 +1415,7 @@ function addon:QUEST_TURNED_IN(event, questID)
 			local link = addon:CreateAddonCopyLink(entry)
 			suffix = format("%s, then report it to the author.", link)
 		end
-		Output("|cffFFFFFF%s|r quest |cffFFFFFF%s#%d|r turned in at the wrong location. You were at |cffFFFFFF%d/%d/%.2f/%.2f|r roughly |cffFFFFFF%.2f|r units away from the expected %s. %s Thanks!", addonName, info.quest.module.event, questID, ns.FACTION, info.uiMapID, info.x * 100, info.y * 100, info.distance * 100, checkedNumQuestPOIs and checkedNumQuestPOIs > 1 and checkedNumQuestPOIs .. " locations" or "location", suffix)
+		Output("|cffFFFFFF%s|r quest |cffFFFFFF%s#%d|r turned in at the wrong location. You were at |cffFFFFFF%d/%d/%.2f/%.2f|r roughly |cffFFFFFF%.2f|r units away from the expected %s. %s Thanks!", addonName, info.quest.module.event, questID, ns.FACTION, info.uiMapID, info.x * 100, info.y * 100, info.distance * 100, checkedNumQuestPOIs and checkedNumQuestPOIs > 1 and format("%d locations", checkedNumQuestPOIs) or "location", suffix)
 	end
 
 	if addon:RemoveQuestPois(questID) then

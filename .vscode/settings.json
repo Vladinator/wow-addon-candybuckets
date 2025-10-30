@@ -23,6 +23,8 @@
         "CLOSE",
         "DEFAULT_CHAT_FRAME",
         "DONE",
+        "FlightMapFrame",
+        "FlightMapMixin",
         "GameTooltip",
         "GameTooltip_AddNormalLine",
         "GameTooltip_SetTitle",
