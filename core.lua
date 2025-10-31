@@ -1263,29 +1263,34 @@ function addon:ShowCopyDialog(text)
 		StaticPopupDialogs[key] = {
 			text = "",
 			button1 = "",
-			-- button2 = "",
+			button2 = nil,
 			hasEditBox = 1,
+			maxLetters = 0,
 			OnShow = function(self, data)
+				local textFS = self.text or self.Text or self:GetTextFontString() ---@type FontString
+				local editBox = self.editBox or self.EditBox or self:GetEditBox() ---@type EditBox
+				local button1 = self.button1 or self.Button1 or self:GetButton1() ---@type Button
+				local button2 = self.button2 or self.Button2 or self:GetButton2() ---@type Button
 				if data.text_arg1 ~= nil then
-					self.text:SetFormattedText(data.text, data.text_arg1, data.text_arg2)
+					textFS:SetFormattedText(data.text, data.text_arg1, data.text_arg2)
 				else
-					self.text:SetText(data.text)
+					textFS:SetText(data.text)
 				end
 				if data.acceptText ~= false then
-					self.button1:SetText(data.acceptText or DONE)
+					button1:SetText(data.acceptText or DONE)
 				else
-					self.button1:Hide()
+					button1:Hide()
 				end
 				if data.cancelText ~= false then
-					self.button2:SetText(data.cancelText or CANCEL)
+					button2:SetText(data.cancelText or CANCEL)
 				else
-					self.button2:Hide()
+					button2:Hide()
 				end
-				self.editBox:SetMaxLetters(data.maxLetters or 255)
-				self.editBox:SetCountInvisibleLetters(not not data.countInvisibleLetters)
+				editBox:SetMaxLetters(data.maxLetters or 255)
+				editBox:SetCountInvisibleLetters(not not data.countInvisibleLetters)
 				if data.editBox then
-					self.editBox:SetText(data.editBox)
-					self.editBox:HighlightText()
+					editBox:SetText(data.editBox)
+					editBox:HighlightText()
 				end
 			end,
 			OnAccept = function(self, data)
