@@ -268,6 +268,11 @@ local function GetPlayerMapAndPosition()
 	return uiMapID, pos
 end
 
+---@param map CandyBucketsMapPosition
+local function IsTaxiMap(map)
+	return map == FlightMapFrame
+end
+
 --
 -- Waypoint
 --
@@ -612,12 +617,12 @@ function CandyBucketsDataProviderMixin:RefreshAllData(fromOnShow)
 	self:RemoveAllData()
 
 	local map = self:GetMap()
+	local isTaxiMap = IsTaxiMap(map)
 	local uiMapID = map:GetMapID()
 	local childUiMapIDs = ns.PARENT_MAP[uiMapID]
 	local tempVector = { x = 0, y = 0 } ---@type Vector2DMixin
 	local questPOIs ---@type table<CandyBucketsQuest, Vector2DMixin>?
 
-	local isTaxiMap = map:GetName() == "FlightMapFrame"
 	if isTaxiMap then
 		uiMapID = ns.PARENT_MAP_TAXI[uiMapID]
 		childUiMapIDs = ns.PARENT_MAP[uiMapID]
@@ -670,7 +675,7 @@ function CandyBucketsDataProviderMixin:RefreshAllData(fromOnShow)
 		end
 
 		if poi then
-			map:AcquirePin("CandyBucketsPinTemplate", quest, poi)
+			map:AcquirePin("CandyBucketsPinTemplate", quest, poi, isTaxiMap)
 			if questPOIs then
 				questPOIs[quest] = poi
 			end
@@ -731,11 +736,13 @@ end
 
 ---@param quest CandyBucketsQuest
 ---@param poi Vector2DMixin
-function CandyBucketsPinMixin:OnAcquired(quest, poi)
+---@param isTaxiMap boolean
+function CandyBucketsPinMixin:OnAcquired(quest, poi, isTaxiMap)
 	self.quest = quest
 	local map = self:GetMap()
 	self:UseFrameLevelType("PIN_FRAME_LEVEL_CANDY_BUCKET_ICON", map:GetNumActivePinsByTemplate("CandyBucketsPinTemplate"))
 	self:SetSize(12, 12)
+	self:EnableMouse(not isTaxiMap)
 	local texture = quest.module.texture[quest.extra or 1]
 	if quest.style == 2 then
 		self:SetTextureAndBorder(texture, PIN_BORDER_TRANSPARENT, true)
@@ -749,13 +756,14 @@ function CandyBucketsPinMixin:OnAcquired(quest, poi)
 		self:SetPosition(poi[1]/100, poi[2]/100)
 	end
 	local uiMapID = map:GetMapID()
-	if uiMapID then
-		local x, y = self:GetPosition()
-		local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
-		local mapInfo = C_Map.GetMapInfo(childUiMapID)
-		if mapInfo and mapInfo.name and childX and childY then
-			self.description = format("%s (%.2f, %.2f)", mapInfo.name, childX * 100, childY * 100)
-		end
+	if not uiMapID then
+		return
+	end
+	local x, y = self:GetPosition()
+	local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
+	local mapInfo = C_Map.GetMapInfo(childUiMapID)
+	if mapInfo and mapInfo.name and childX and childY then
+		self.description = format("%s (%.2f, %.2f)", mapInfo.name, childX * 100, childY * 100)
 	end
 end
 
