@@ -80,6 +80,13 @@
 local addonName = ... ---@type string
 local ns = select(2, ...) ---@class CandyBucketsNS
 
+local _issecretvalue = issecretvalue
+
+---@param value any
+local function issecretvalue(value)
+	return _issecretvalue and _issecretvalue(value)
+end
+
 --
 -- Debug
 --
@@ -1032,7 +1039,7 @@ function addon:CheckCalendar()
 	for i = 1, numEvents do
 		local event = C_Calendar.GetDayEvent(monthOffset, day, i)
 
-		if event and event.calendarType == "HOLIDAY" then
+		if event and (not issecretvalue(event.calendarType)) and event.calendarType == "HOLIDAY" then
 			local ongoing = event.sequenceType == "ONGOING" -- or event.sequenceType == "INFO"
 			local moduleName = MODULE_FROM_TEXTURE[event.iconTexture]
 
