@@ -1034,12 +1034,15 @@ function addon:CheckCalendar()
 	end
 
 	local numEvents = C_Calendar.GetNumDayEvents(monthOffset, day)
-	local loadedEvents, numLoaded, numLoadedRightNow = {}, 0, 0
+	local loadedEvents, numLoaded, numLoadedRightNow, numSecrets = {}, 0, 0, 0
 
 	for i = 1, numEvents do
 		local event = C_Calendar.GetDayEvent(monthOffset, day, i)
 
-		if event and (not issecretvalue(event.calendarType)) and event.calendarType == "HOLIDAY" then
+		local isSecret = issecretvalue(event.calendarType)
+		numSecrets = numSecrets + (isSecret and 1 or 0)
+
+		if event and (not isSecret) and event.calendarType == "HOLIDAY" then
 			local ongoing = event.sequenceType == "ONGOING" -- or event.sequenceType == "INFO"
 			local moduleName = MODULE_FROM_TEXTURE[event.iconTexture]
 
@@ -1080,10 +1083,12 @@ function addon:CheckCalendar()
 		end
 	end
 
-	for name, module in pairs(ns.modules) do
-		if addon:CanUnloadModule(name) and not loadedEvents[name] then
-			Output("|cffFFFFFF%s|r couldn't find |cffFFFFFF%s|r in the calendar so we consider the event expired.", addonName, name)
-			addon:UnloadModule(name)
+	if numSecrets == 0 then
+		for name, module in pairs(ns.modules) do
+			if addon:CanUnloadModule(name) and not loadedEvents[name] then
+				Output("|cffFFFFFF%s|r couldn't find |cffFFFFFF%s|r in the calendar so we consider the event expired.", addonName, name)
+				addon:UnloadModule(name)
+			end
 		end
 	end
 
