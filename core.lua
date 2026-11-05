@@ -655,8 +655,9 @@ function CandyBucketsDataProviderMixin:RefreshAllData(fromOnShow)
 			poi = quest[uiMapID] ---@type Vector2DMixin?
 
 		else
-			for childUiMapID, _ in pairs(childUiMapIDs) do
-				poi = quest[childUiMapID] ---@type Vector2DMixin?
+			-- iterate the quest's own map keys rather than every child map (Azeroth has thousands)
+			for childUiMapID, childPoi in pairs(quest) do
+				poi = type(childUiMapID) == "number" and childUiMapIDs[childUiMapID] and childPoi or nil ---@type Vector2DMixin?
 
 				if poi then
 					local translateKey = format("%s,%s", uiMapID, childUiMapID)
@@ -772,16 +773,23 @@ function CandyBucketsPinMixin:OnAcquired(quest, poi, isTaxiMap)
 	else
 		self:SetPosition(poi[1]/100, poi[2]/100)
 	end
-	local uiMapID = map:GetMapID()
-	if not uiMapID then
-		return
+end
+
+-- resolved on hover; doing this for every pin on every refresh trips "script ran too long"
+function CandyBucketsPinMixin:GetDescription()
+	if self.description == nil then
+		self.description = false
+		local uiMapID = self:GetMap():GetMapID()
+		if uiMapID then
+			local x, y = self:GetPosition()
+			local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
+			local mapInfo = C_Map.GetMapInfo(childUiMapID)
+			if mapInfo and mapInfo.name and childX and childY then
+				self.description = format("%s (%.2f, %.2f)", mapInfo.name, childX * 100, childY * 100)
+			end
+		end
 	end
-	local x, y = self:GetPosition()
-	local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
-	local mapInfo = C_Map.GetMapInfo(childUiMapID)
-	if mapInfo and mapInfo.name and childX and childY then
-		self.description = format("%s (%.2f, %.2f)", mapInfo.name, childX * 100, childY * 100)
-	end
+	return self.description or nil
 end
 
 function CandyBucketsPinMixin:OnReleased()
@@ -795,8 +803,9 @@ function CandyBucketsPinMixin:OnMouseEnter()
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 	self.UpdateTooltip = self.OnMouseEnter
 	GameTooltip_SetTitle(GameTooltip, self.name)
-	if self.description and self.description ~= "" then
-		GameTooltip_AddNormalLine(GameTooltip, self.description, true)
+	local description = self:GetDescription()
+	if description and description ~= "" then
+		GameTooltip_AddNormalLine(GameTooltip, description, true)
 	end
 	if self.quest then
 		GameTooltip_AddNormalLine(GameTooltip, format("Quest ID: %s", self.quest.quest), false)
