@@ -3,6 +3,8 @@
 ---@class CandyBucketsNS : table
 ---@field public modules table<CandyBucketsModuleName, CandyBucketsModule>
 
+---@alias CandyBucketsQuestPOI number[]
+
 ---@class CandyBucketsQuest
 ---@field public quest number
 ---@field public side number `1` = Alliance, `2` = Horde, `3` = Neutral
@@ -10,7 +12,7 @@
 ---@field public style? number `1` = Circle (Default), `2` = No Border and Plain Icon
 ---@field public waypoint? boolean
 ---@field public module? CandyBucketsModule
----@field public [number] number[] Example `[1000] = { 12.34, 56.78 }`
+---@field public [number] CandyBucketsQuestPOI Example `[1000] = { 12.34, 56.78 }`
 
 ---@class CandyBucketsModule
 ---@field public event CandyBucketsModuleName
@@ -38,7 +40,7 @@
 ---@field public name string
 ---@field public standard? boolean
 ---@field public canUse? fun(self: CandyBucketsWaypointAddOn): boolean
----@field public func fun(self: CandyBucketsWaypointAddOn, poi: CandyBucketsMapPosition, wholeModule?: boolean): boolean|string
+---@field public func fun(self: CandyBucketsWaypointAddOn, poi: CandyBucketsPin, wholeModule?: boolean): boolean|string
 ---@field public funcAll fun(self: CandyBucketsWaypointAddOn, module: CandyBucketsModule): boolean|string
 ---@field public funcRemove? fun(self: CandyBucketsWaypointAddOn, questID: number): boolean
 ---@field public funcClosest? fun(self: CandyBucketsWaypointAddOn): boolean
@@ -211,7 +213,7 @@ ns.PARENT_MAP = setmetatable({}, {
 })
 
 -- Lazy load the parent taxi map table. Cache the results for later use.
--- Returns the table of all maps that are considered to be its children, otherwise `false`.
+-- Returns the real map ID for the provided taxi map ID.
 ---@type table<number, number>
 ns.PARENT_MAP_TAXI = setmetatable({}, {
 	__index = function(self, uiMapID)
@@ -327,19 +329,20 @@ do
 				TomTom:SetClosestWaypoint()
 				return true
 			end
-			local uiMapID = poi:GetMap():GetMapID()
-			local x, y = poi:GetPosition()
-			local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
-			local mapInfo = C_Map.GetMapInfo(childUiMapID)
+			local uiMapID, x, y = poi:GetQuestLocation()
+			if not uiMapID then
+				return false
+			end
+			local mapInfo = C_Map.GetMapInfo(uiMapID)
 			---@type TomTomWaypointOptionsPolyfill
 			local options = {
 				from = addonName,
 				quest = poi.quest,
-				title = format("%s (%s, %d)", poi.name, mapInfo.name or format("Map %d", childUiMapID), poi.quest.quest),
+				title = format("%s (%s, %d)", poi.name, mapInfo and mapInfo.name or format("Map %d", uiMapID), poi.quest.quest),
 				minimap = true,
 				crazy = true,
 			}
-			TomTom:AddWaypoint(childUiMapID, childX, childY, options)
+			TomTom:AddWaypoint(uiMapID, x, y, options)
 			return true
 		end,
 		funcAll = function(self, module)
@@ -425,15 +428,16 @@ do
 			end
 			---@type MapPinEnhancedPolyfill
 			local MapPinEnhanced = MapPinEnhanced
-			local uiMapID = poi:GetMap():GetMapID()
-			local x, y = poi:GetPosition()
-			local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
-			local mapInfo = C_Map.GetMapInfo(childUiMapID)
+			local uiMapID, x, y = poi:GetQuestLocation()
+			if not uiMapID then
+				return false
+			end
+			local mapInfo = C_Map.GetMapInfo(uiMapID)
 			MapPinEnhanced:AddPin({
-				mapID = childUiMapID,
-				x = childX,
-				y = childY,
-				title = format("%s (%s, %d)", poi.name, mapInfo.name or format("Map %d", childUiMapID), poi.quest.quest),
+				mapID = uiMapID,
+				x = x,
+				y = y,
+				title = format("%s (%s, %d)", poi.name, mapInfo and mapInfo.name or format("Map %d", uiMapID), poi.quest.quest),
 				setTracked = true,
 			})
 			return true
@@ -463,6 +467,12 @@ do
 		end,
 	}
 
+	---@param vector Vector2DMixin
+	---@param coords CandyBucketsQuestPOI
+	local function VectorIsEqualToCoords(vector, coords)
+		return abs(vector.x * 100 - coords[1]) < 1 and abs(vector.y * 100 - coords[2]) < 1
+	end
+
 	-- C_Map.SetUserWaypoint (9.0.1)
 	---@type CandyBucketsWaypointAddOn
 	local standardWaypointAddon = {
@@ -479,14 +489,19 @@ do
 				self:funcAll(poi.quest.module)
 				return true
 			end
-			local uiMapID = poi:GetMap():GetMapID()
-			local x, y = poi:GetPosition()
-			local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
-			local mapInfo = C_Map.GetMapInfo(childUiMapID)
-			if not C_Map.CanSetUserWaypointOnMap(childUiMapID) then
-				return format("Can't make a waypoint to %s. Enter the continent then try again.", mapInfo.name)
+			local uiMapID, x, y = poi:GetQuestLocation()
+			if not uiMapID then
+				return false
 			end
-			C_Map.SetUserWaypoint({ uiMapID = childUiMapID, position = { x = childX, y = childY } })
+			if not C_Map.CanSetUserWaypointOnMap(uiMapID) then
+				local shownX, shownY = poi:GetPosition()
+				uiMapID, x, y = GetLowestLevelMapFromMapID(poi:GetMap():GetMapID(), shownX, shownY)
+				if not C_Map.CanSetUserWaypointOnMap(uiMapID) then
+					local mapInfo = C_Map.GetMapInfo(uiMapID)
+					return format("Can't make a waypoint to %s. Enter the continent then try again.", mapInfo and mapInfo.name or format("Map %d", uiMapID))
+				end
+			end
+			C_Map.SetUserWaypoint({ uiMapID = uiMapID, position = { x = x, y = y } })
 			return true
 		end,
 		funcAll = function(self, module)
@@ -515,7 +530,7 @@ do
 				if quest.quest == questID then
 					for uiMapID, coords in pairs(quest) do
 						if type(uiMapID) == "number" and type(coords) == "table" then
-							if waypoint.uiMapID == uiMapID and waypoint.position.x == coords[1] and waypoint.position.y == coords[2] then
+							if waypoint.uiMapID == uiMapID and VectorIsEqualToCoords(waypoint.position, coords) then
 								C_Map.ClearUserWaypoint()
 								return true
 							end
@@ -551,7 +566,7 @@ do
 		end
 	end
 
-	---@param poi CandyBucketsMapPosition
+	---@param poi CandyBucketsPin
 	---@param wholeModule? boolean
 	---@param silent? boolean
 	---@return boolean success
@@ -636,6 +651,11 @@ function CandyBucketsDataProviderMixin:RemoveAllData()
 	map:RemoveAllPinsByTemplate("CandyBucketsStatsTemplate")
 end
 
+-- Cache translated locations between child and shown map.
+-- The first key is the shown map, the second is the location table from the module. `false` means translation was impossible.
+---@type table<number, table<CandyBucketsQuestPOI, CandyBucketsQuestPOI|false>>
+local TRANSLATED_POIS = {}
+
 ---@param fromOnShow boolean?
 function CandyBucketsDataProviderMixin:RefreshAllData(fromOnShow)
 	self:RemoveAllData()
@@ -645,11 +665,20 @@ function CandyBucketsDataProviderMixin:RefreshAllData(fromOnShow)
 	local uiMapID = map:GetMapID()
 	local childUiMapIDs = ns.PARENT_MAP[uiMapID]
 	local tempVector = { x = 0, y = 0 } ---@type Vector2DMixin
-	local questPOIs ---@type table<CandyBucketsQuest, Vector2DMixin>?
+	local questPOIs ---@type CandyBucketsStatsEntry[]?
+	local translatedPOIs ---@type table<CandyBucketsQuestPOI, CandyBucketsQuestPOI|false>?
 
 	if isTaxiMap then
 		uiMapID = ns.PARENT_MAP_TAXI[uiMapID]
 		childUiMapIDs = ns.PARENT_MAP[uiMapID]
+	end
+
+	if childUiMapIDs then
+		translatedPOIs = TRANSLATED_POIS[uiMapID]
+		if not translatedPOIs then
+			translatedPOIs = {}
+			TRANSLATED_POIS[uiMapID] = translatedPOIs
+		end
 	end
 
 	if IsModifierKeyDown() then
@@ -658,38 +687,41 @@ function CandyBucketsDataProviderMixin:RefreshAllData(fromOnShow)
 
 	for i = 1, #ns.QUESTS do
 		local quest = ns.QUESTS[i]
-		local poi ---@type Vector2DMixin?
-		local poi2 ---@type Vector2DMixin?
+		local poi ---@type CandyBucketsQuestPOI|false?
+		local questUiMapID ---@type number?
+		local questPOI ---@type CandyBucketsQuestPOI?
 
 		if not childUiMapIDs then
-			poi = quest[uiMapID] ---@type Vector2DMixin?
+			poi = quest[uiMapID]
+			questUiMapID, questPOI = uiMapID, poi
 
 		else
-			for childUiMapID, _ in pairs(childUiMapIDs) do
-				poi = quest[childUiMapID] ---@type Vector2DMixin?
+			for childUiMapID, childPoi in pairs(quest) do
+				if type(childUiMapID) == "number" and type(childPoi) == "table" and childUiMapIDs[childUiMapID] then
+					questUiMapID, questPOI = childUiMapID, childPoi
 
-				if poi then
-					local translateKey = format("%s,%s", uiMapID, childUiMapID)
+					if childUiMapID == uiMapID then
+						---@type CandyBucketsQuestPOI
+						poi = childPoi
 
-					if poi[translateKey] ~= nil then
-						poi = poi[translateKey]
+					elseif translatedPOIs then
+						poi = translatedPOIs[childPoi]
 
-					else
-						tempVector.x, tempVector.y = poi[1]/100, poi[2]/100
-						local continentID, worldPos = C_Map.GetWorldPosFromMapPos(childUiMapID, tempVector)
-						poi, poi2 = nil, poi
+						if poi == nil then
+							poi = false
+							tempVector.x, tempVector.y = childPoi[1]/100, childPoi[2]/100
+							local continentID, worldPos = C_Map.GetWorldPosFromMapPos(childUiMapID, tempVector)
 
-						if continentID and worldPos then
-							local _, mapPos = C_Map.GetMapPosFromWorldPos(continentID, worldPos, uiMapID)
+							if continentID and worldPos then
+								local _, mapPos = C_Map.GetMapPosFromWorldPos(continentID, worldPos, uiMapID)
 
-							if mapPos then
-								poi = mapPos
-								poi2[translateKey] = mapPos
+								if mapPos and mapPos.x and mapPos.y then
+									---@type CandyBucketsQuestPOI
+									poi = { mapPos.x * 100, mapPos.y * 100 }
+								end
 							end
-						end
 
-						if not poi then
-							poi2[translateKey] = false
+							translatedPOIs[childPoi] = poi
 						end
 					end
 
@@ -699,14 +731,14 @@ function CandyBucketsDataProviderMixin:RefreshAllData(fromOnShow)
 		end
 
 		if poi then
-			map:AcquirePin("CandyBucketsPinTemplate", quest, poi, isTaxiMap)
-			if questPOIs then
-				questPOIs[quest] = poi
+			map:AcquirePin("CandyBucketsPinTemplate", quest, poi, isTaxiMap, questUiMapID, questPOI)
+			if questPOIs and questUiMapID and type(questPOI) == "table" and poi[1] > 0 and poi[1] < 100 and poi[2] > 0 and poi[2] < 100 then
+				questPOIs[#questPOIs + 1] = { quest = quest, uiMapID = questUiMapID, poi = questPOI }
 			end
 		end
 	end
 
-	if questPOIs and next(questPOIs) then
+	if questPOIs and questPOIs[1] then
 		map:AcquirePin("CandyBucketsStatsTemplate", questPOIs)
 	end
 end
@@ -726,8 +758,10 @@ local PIN_BORDER_COLOR = {
 
 ---@class CandyBucketsPin
 ---@field public quest CandyBucketsQuest
+---@field public questUiMapID? number
+---@field public questPOI? CandyBucketsQuestPOI
 ---@field public name? string
----@field public description? string
+---@field public description? string|false This resolves through `GetDescription` so it lazy-loads. `false` means there is nothing to display.
 
 ---@class CandyBucketsPin
 CandyBucketsPinMixin = CreateFromMixins(MapCanvasPinMixin)
@@ -759,10 +793,14 @@ function CandyBucketsPinMixin:SetTextureAndBorder(texture, border, noBorderPlain
 end
 
 ---@param quest CandyBucketsQuest
----@param poi Vector2DMixin
+---@param poi CandyBucketsQuestPOI
 ---@param isTaxiMap boolean
-function CandyBucketsPinMixin:OnAcquired(quest, poi, isTaxiMap)
+---@param questUiMapID number
+---@param questPOI CandyBucketsQuestPOI
+function CandyBucketsPinMixin:OnAcquired(quest, poi, isTaxiMap, questUiMapID, questPOI)
 	self.quest = quest
+	self.questUiMapID = questUiMapID
+	self.questPOI = questPOI
 	if not quest.module then
 		return
 	end
@@ -777,25 +815,39 @@ function CandyBucketsPinMixin:OnAcquired(quest, poi, isTaxiMap)
 		self:SetTextureAndBorder(texture, PIN_BORDER_COLOR[quest.side or 0])
 	end
 	self.name = quest.module.title[quest.extra or 1]
-	if poi.GetXY then
-		self:SetPosition(poi:GetXY())
-	else
-		self:SetPosition(poi[1]/100, poi[2]/100)
+	self:SetPosition(poi[1]/100, poi[2]/100)
+end
+
+---@return string? description
+function CandyBucketsPinMixin:GetDescription()
+	if self.description == nil then
+		self.description = false
+		local uiMapID, questPOI = self.questUiMapID, self.questPOI
+		local mapInfo = uiMapID and questPOI and C_Map.GetMapInfo(uiMapID)
+		if mapInfo and mapInfo.name then
+			self.description = format("%s (%.2f, %.2f)", mapInfo.name, questPOI[1], questPOI[2])
+		end
 	end
-	local uiMapID = map:GetMapID()
-	if not uiMapID then
+	return self.description or nil
+end
+
+---@return (number uiMapID, number x, number y) | (nil, nil, nil)
+function CandyBucketsPinMixin:GetQuestLocation()
+	local questUiMapID = self.questUiMapID
+	if not questUiMapID then
 		return
 	end
-	local x, y = self:GetPosition()
-	local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
-	local mapInfo = C_Map.GetMapInfo(childUiMapID)
-	if mapInfo and mapInfo.name and childX and childY then
-		self.description = format("%s (%.2f, %.2f)", mapInfo.name, childX * 100, childY * 100)
+	local questPOI = self.questPOI
+	if not questPOI then
+		return
 	end
+	return questUiMapID, questPOI[1]/100, questPOI[2]/100
 end
 
 function CandyBucketsPinMixin:OnReleased()
 	self.quest = nil
+	self.questUiMapID = nil
+	self.questPOI = nil
 	self.name = nil
 	self.description = nil
 end
@@ -805,8 +857,9 @@ function CandyBucketsPinMixin:OnMouseEnter()
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 	self.UpdateTooltip = self.OnMouseEnter
 	GameTooltip_SetTitle(GameTooltip, self.name)
-	if self.description and self.description ~= "" then
-		GameTooltip_AddNormalLine(GameTooltip, self.description, true)
+	local description = self:GetDescription()
+	if description and description ~= "" then
+		GameTooltip_AddNormalLine(GameTooltip, description, true)
 	end
 	if self.quest then
 		GameTooltip_AddNormalLine(GameTooltip, format("Quest ID: %s", self.quest.quest), false)
@@ -847,7 +900,12 @@ function CandyBucketsStatsMixin:OnLoad()
 	self.Texture:Hide()
 end
 
----@param questPOIs table<CandyBucketsQuest, Vector2DMixin>
+---@class CandyBucketsStatsEntry
+---@field public quest CandyBucketsQuest
+---@field public uiMapID number
+---@field public poi CandyBucketsQuestPOI
+
+---@param questPOIs CandyBucketsStatsEntry[]
 function CandyBucketsStatsMixin:OnAcquired(questPOIs)
 	local map = self:GetMap()
 	self:UseFrameLevelType("PIN_FRAME_LEVEL_CANDY_BUCKET_STATS", map:GetNumActivePinsByTemplate("CandyBucketsStatsTemplate"))
@@ -857,33 +915,18 @@ function CandyBucketsStatsMixin:OnAcquired(questPOIs)
 	--self:SetPoint("TOPLEFT", map:GetCanvasContainer(), "TOPLEFT", 0, 0)
 	self.name = nil
 	self.description = nil
-	local text
-	local i = 0
-	local uiMapID = map:GetMapID()
-	if uiMapID then
-		text = {}
-		for quest, poi in pairs(questPOIs) do
-			local x, y
-			if poi.GetXY then
-				x, y = poi:GetXY()
-			else
-				x, y = poi[1]/100, poi[2]/100
-			end
-			local childUiMapID, childX, childY = GetLowestLevelMapFromMapID(uiMapID, x, y)
-			if childX > 0 and childX < 1 and childY > 0 and childY < 1 then
-				local mapInfo = C_Map.GetMapInfo(childUiMapID)
-				i = i + 1
-				if mapInfo and mapInfo.name then
-					text[i] = format("%s (%.2f, %.2f)", mapInfo.name, childX * 100, childY * 100)
-				else
-					text[i] = format("#%d", quest.quest)
-				end
-			end
+	local text = {} ---@type string[]
+	for i = 1, #questPOIs do
+		local entry = questPOIs[i]
+		local mapInfo = C_Map.GetMapInfo(entry.uiMapID)
+		if mapInfo and mapInfo.name then
+			text[i] = format("%s (%.2f, %.2f)", mapInfo.name, entry.poi[1], entry.poi[2])
+		else
+			text[i] = format("#%d", entry.quest.quest)
 		end
-		table.sort(text)
-		text = table.concat(text, "\r\n")
 	end
-	self.Text:SetText(text)
+	table.sort(text)
+	self.Text:SetText(table.concat(text, "\r\n"))
 end
 
 function CandyBucketsStatsMixin:OnReleased()
@@ -1466,8 +1509,9 @@ function addon:QUEST_TURNED_IN(_, questID)
 		Output("|cffFFFFFF%s|r quest |cffFFFFFF%s#%d|r turned in at the wrong location. You were at |cffFFFFFF%d/%d/%.2f/%.2f|r roughly |cffFFFFFF%.2f|r units away from the expected %s. %s Thanks!", addonName, info.quest.module.event, questID, ns.FACTION, info.uiMapID, info.x * 100, info.y * 100, info.distance * 100, checkedNumQuestPOIs and checkedNumQuestPOIs > 1 and format("%d locations", checkedNumQuestPOIs) or "location", suffix)
 	end
 
+	local removedWaypoint = ns:RemoveQuestWaypoint(questID)
 	if addon:RemoveQuestPois(questID) then
-		if ns:RemoveQuestWaypoint(questID) then
+		if removedWaypoint then
 			ns:AutoWaypointClosest()
 		end
 		addon:RefreshAllWorldMaps(true)
