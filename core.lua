@@ -127,105 +127,115 @@ ns.COMPLETED_QUESTS = setmetatable({}, {
 -- Map
 --
 
-ns.PARENT_MAP = {} ---@type table<number, table<number, boolean>>
-do
+---@type table<number, number[]>
+local PARENT_MAP_OVERRIDES = {
+	[108] = { 111 }, -- Terokkar Forest -> Shattrath City
+	[539] = { 582 }, -- Shadowmoon Valley -> Lunarfall
+	[525] = { 590 }, -- Frostfire Ridge -> Frostwall
+	[1978] = { 2151 }, -- Dragon Isles -> The Forbidden Reach
+	[2405] = { 2444 }, -- Voidstorm -> Slayer's Rise
+}
 
-	-- TODO: PR #39
+local COSMIC_MAP_ID = 946
 
-	---@param uiParentMapID number
-	---@param uiChildMapID number
-	local function AddParentChildMapIDs(uiParentMapID, uiChildMapID)
-		local temp = ns.PARENT_MAP[uiParentMapID]
-		if not temp then
-			temp = { [uiParentMapID] = true }
-			ns.PARENT_MAP[uiParentMapID] = temp
-		end
-		temp[uiChildMapID] = true
+---@type table<number, true>?
+local usedMaps
+
+-- Lazy load the `usedMaps` table when required.
+---@return table<number, true> usedMaps
+local function GetUsedMaps()
+	if usedMaps then
+		return usedMaps
 	end
-
-	---@param uiMapID number
-	---@param getChildren fun(uiMapID: number): UiMapDetails[]?
-	---@param depthRemaining number
-	---@param uiParentMapIDs? table<number, boolean>
-	local function CheckMapRecursively(uiMapID, getChildren, depthRemaining, uiParentMapIDs)
-		if not uiMapID or not getChildren then return end
-		if not depthRemaining then depthRemaining = 1 end
-		if depthRemaining < 1 then return end
-		if not uiParentMapIDs then uiParentMapIDs = {} end
-		for uiParentMapID, _ in pairs(uiParentMapIDs) do
-			AddParentChildMapIDs(uiParentMapID, uiMapID)
-		end
-		uiParentMapIDs[uiMapID] = true
-		local children = getChildren(uiMapID)
-		if children and type(children) == "table" then
-			for _, uiChildMapID in pairs(children) do
-				if type(uiChildMapID) == "table" then
-					uiChildMapID = uiChildMapID.mapID ---@diagnostic disable-line: cast-local-type
-				end
-				if type(uiChildMapID) == "number" then
-					AddParentChildMapIDs(uiMapID, uiChildMapID)
-					CheckMapRecursively(uiChildMapID, getChildren, depthRemaining - 1, uiParentMapIDs)
+	usedMaps = {}
+	for _, module in pairs(ns.modules) do
+		local quests = module.quests
+		for i = 1, #quests do
+			for uiMapID, coords in pairs(quests[i]) do
+				if type(uiMapID) == "number" and type(coords) == "table" then
+					usedMaps[uiMapID] = true
 				end
 			end
 		end
 	end
-
-	---@return UiMapDetails[]?
-	local function GetChildren(uiMapID)
-		return C_Map.GetMapChildrenInfo(uiMapID, nil, true) -- Enum.UIMapType.Zone
-	end
-
-	for _, uiMapID in ipairs({
-		12, -- Kalimdor
-		13, -- Eastern Kingdoms
-		101, -- Outland
-		113, -- Northrend
-		127, -- Crystalsong Forest
-		203, -- Vashj'ir
-		224, -- Stranglethorn Vale
-		390, -- Vale of Eternal Blossoms
-		424, -- Pandaria
-		572, -- Draenor
-		619, -- Broken Isles
-		862, -- Zuldazar
-		875, -- Zandalar
-		876, -- Kul Tiras
-		895, -- Tiragarde Sound
-		947, -- Azeroth (CPU hog, but it's not too bad?)
-		948, -- The Maelstrom
-		1165, -- Dazar'alor
-		1550, -- The Shadowlands
-		1978, -- Dragon Isles
-		2274, -- Khaz Algar
-	}) do
-		CheckMapRecursively(uiMapID, GetChildren, 10)
-	end
-
-	AddParentChildMapIDs(108, 111) -- Terokkar Forest -> Shattrath City
-	AddParentChildMapIDs(539, 582) -- Shadowmoon Valley -> Lunarfall
-	AddParentChildMapIDs(525, 590) -- Frostfire Ridge -> Frostwall
-	AddParentChildMapIDs(1978, 2151) -- Dragon Isles -> The Forbidden Reach
-	AddParentChildMapIDs(947, 2151) -- Azeroth -> The Forbidden Reach
-	AddParentChildMapIDs(2405, 2444) -- Voidstorm -> Slayer's Rise
-
+	return usedMaps
 end
 
----@type table<number, number>
-ns.PARENT_MAP_TAXI = setmetatable({}, {
-	__index = function (self, uiMapID)
-		local mapInfo = C_Map.GetMapInfo(uiMapID)
-		for uiParentMapID, childUiMapIDs in pairs(ns.PARENT_MAP) do
-			for childUiMapID, _ in pairs(childUiMapIDs) do
-				local childMapInfo = C_Map.GetMapInfo(childUiMapID)
-				if mapInfo.mapType == childMapInfo.mapType and mapInfo.name == childMapInfo.name then
-					uiMapID = childMapInfo.mapID
-					self[uiMapID] = uiMapID
-					return uiMapID
+-- Add the `uiMapID` (and any map overrides from `PARENT_MAP_OVERRIDES`) to the provided `childUiMapIDs` table.
+---@param childUiMapIDs table<number, boolean>
+---@param uiMapID number
+---@return boolean added
+local function AddUsedChildMapID(childUiMapIDs, uiMapID)
+	local used = GetUsedMaps()
+	local added = false
+	if used[uiMapID] and not childUiMapIDs[uiMapID] then
+		childUiMapIDs[uiMapID] = true
+		added = true
+	end
+	local overrides = PARENT_MAP_OVERRIDES[uiMapID]
+	if overrides then
+		for i = 1, #overrides do
+			local uiChildMapID = overrides[i]
+			if used[uiChildMapID] and not childUiMapIDs[uiChildMapID] then
+				childUiMapIDs[uiChildMapID] = true
+				added = true
+			end
+		end
+	end
+	return added
+end
+
+-- Lazy load the parent map table. Cache the results for later use.
+-- Returns the table of all maps that are considered to be its children, otherwise `false`.
+---@type table<number, table<number, boolean>|false>
+ns.PARENT_MAP = setmetatable({}, {
+	__index = function(self, uiMapID)
+		if type(uiMapID) ~= "number" then
+			return
+		end
+		local childUiMapIDs = { [uiMapID] = true }
+		local hasChildren = AddUsedChildMapID(childUiMapIDs, uiMapID)
+		local children = C_Map.GetMapChildrenInfo(uiMapID, nil, true)
+		if type(children) == "table" then
+			for i = 1, #children do
+				local uiChildMapID = children[i].mapID
+				if type(uiChildMapID) == "number" and AddUsedChildMapID(childUiMapIDs, uiChildMapID) then
+					hasChildren = true
 				end
 			end
 		end
-		self[uiMapID] = uiMapID
-		return uiMapID
+		local result = hasChildren and childUiMapIDs or false
+		rawset(self, uiMapID, result)
+		return result
+	end,
+})
+
+-- Lazy load the parent taxi map table. Cache the results for later use.
+-- Returns the table of all maps that are considered to be its children, otherwise `false`.
+---@type table<number, number>
+ns.PARENT_MAP_TAXI = setmetatable({}, {
+	__index = function(self, uiMapID)
+		if type(uiMapID) ~= "number" then
+			return uiMapID
+		end
+		local resolvedUiMapID = uiMapID
+		local used = GetUsedMaps()
+		if not used[uiMapID] and not ns.PARENT_MAP[uiMapID] then
+			local mapInfo = C_Map.GetMapInfo(uiMapID)
+			local candidates = mapInfo and C_Map.GetMapChildrenInfo(COSMIC_MAP_ID, mapInfo.mapType, true)
+			if type(candidates) == "table" then
+				for i = 1, #candidates do
+					local candidate = candidates[i]
+					local candidateUiMapID = candidate.mapID
+					if candidateUiMapID ~= uiMapID and candidate.name == mapInfo.name and (used[candidateUiMapID] or ns.PARENT_MAP[candidateUiMapID]) then
+						resolvedUiMapID = candidateUiMapID
+						break
+					end
+				end
+			end
+		end
+		rawset(self, uiMapID, resolvedUiMapID)
+		return resolvedUiMapID
 	end,
 })
 
